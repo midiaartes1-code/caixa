@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f0e0c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Caixa">
+<title>Caixa — Johann</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f0e0c;
+  --bg-2:#1a1815;
+  --bg-3:#252320;
+  --ink:#f5f0e8;
+  --ink-2:#a8a098;
+  --ink-3:#6b645c;
+  --line:#2e2a25;
+  --green:#9eb87a;
+  --red:#d97757;
+  --yellow:#e6b450;
+  --blue:#7fa9c7;
+  --display:'Fraunces',ui-serif,Georgia,serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:14px;line-height:1.5;overscroll-behavior:none}
+body{min-height:100vh;min-height:100dvh;padding-bottom:90px}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit;background:transparent;border:none;outline:none}
+button{cursor:pointer}
+input[type="number"]{-moz-appearance:textfield}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+/* HEADER */
+.header{padding:24px 20px 8px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--line)}
+.brand{font-family:var(--display);font-weight:900;font-size:32px;letter-spacing:-0.02em;font-style:italic}
+.brand span{color:var(--yellow)}
+.month{font-family:var(--mono);font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:0.1em;padding-bottom:6px}
+
+/* SALDO HERO */
+.hero{padding:32px 20px 28px;border-bottom:1px solid var(--line);position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;top:-40px;right:-40px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(230,180,80,0.08),transparent 70%);pointer-events:none}
+.hero-label{font-size:10px;text-transform:uppercase;letter-spacing:0.2em;color:var(--ink-3);margin-bottom:12px}
+.hero-value{font-family:var(--display);font-weight:500;font-size:52px;letter-spacing:-0.03em;line-height:1;color:var(--ink)}
+.hero-value .currency{font-size:24px;color:var(--ink-2);margin-right:6px;vertical-align:top;display:inline-block;margin-top:8px}
+.hero-value .cents{color:var(--ink-2);font-size:32px}
+.hero-sub{display:flex;gap:24px;margin-top:20px;font-size:12px}
+.hero-sub-item{display:flex;flex-direction:column;gap:4px}
+.hero-sub-label{color:var(--ink-3);font-size:10px;text-transform:uppercase;letter-spacing:0.15em}
+.hero-sub-value{font-weight:500}
+.hero-sub-value.pos{color:var(--green)}
+.hero-sub-value.neg{color:var(--red)}
+
+/* SECTION TABS */
+.tabs{display:flex;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:10}
+.tab{flex:1;padding:14px 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-3);position:relative;font-weight:500}
+.tab.active{color:var(--ink)}
+.tab.active::after{content:"";position:absolute;bottom:-1px;left:20%;right:20%;height:2px;background:var(--yellow)}
+.tab .badge{display:inline-block;background:var(--bg-3);color:var(--ink-2);padding:2px 6px;border-radius:8px;font-size:9px;margin-left:4px;font-weight:700}
+
+/* CONTENT */
+.content{padding:0}
+.section{display:none}
+.section.active{display:block}
+
+/* TOTALS BAR (fontes, status) */
+.totals{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:14px}
+.totals-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.totals-label{font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:0.1em;display:flex;align-items:center;gap:8px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.totals-value{font-family:var(--display);font-weight:500;font-size:18px;letter-spacing:-0.01em}
+.totals-value.pos{color:var(--green)}
+.totals-value.neg{color:var(--red)}
+.totals-value.neutral{color:var(--ink-2)}
+
+/* LIST */
+.list{display:flex;flex-direction:column}
+.empty{padding:60px 20px;text-align:center;color:var(--ink-3)}
+.empty-icon{font-family:var(--display);font-size:48px;font-style:italic;color:var(--bg-3);margin-bottom:8px}
+.empty-text{font-size:13px;line-height:1.6}
+
+.item{padding:14px 20px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center;transition:background 0.15s}
+.item:active{background:var(--bg-2)}
+.item-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.item-main{min-width:0}
+.item-desc{font-size:13px;color:var(--ink);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item-meta{font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px}
+.item-value{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:-0.01em;text-align:right}
+.item-value.pos{color:var(--green)}
+.item-value.neg{color:var(--red)}
+.item-value.pending{color:var(--yellow)}
+.item-actions{display:flex;gap:6px}
+.icon-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--ink-3);border-radius:6px}
+.icon-btn:active{background:var(--bg-3);color:var(--ink)}
+.icon-btn svg{width:16px;height:16px}
+.item.pending{position:relative}
+.item.pending::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--yellow)}
+
+/* FAB */
+.fab{position:fixed;bottom:24px;right:24px;width:64px;height:64px;border-radius:50%;background:var(--yellow);color:var(--bg);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(230,180,80,0.3),0 2px 8px rgba(0,0,0,0.4);z-index:20;font-size:32px;font-weight:300}
+.fab:active{transform:scale(0.95)}
+
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.modal.open{display:flex}
+.sheet{background:var(--bg-2);width:100%;max-width:500px;border-radius:24px 24px 0 0;padding:24px 20px 32px;border-top:1px solid var(--line);max-height:92dvh;overflow-y:auto;animation:slideUp 0.25s cubic-bezier(0.2,0.8,0.2,1)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-handle{width:40px;height:4px;background:var(--bg-3);border-radius:2px;margin:0 auto 20px}
+.sheet-title{font-family:var(--display);font-style:italic;font-weight:700;font-size:24px;letter-spacing:-0.02em;margin-bottom:24px}
+
+.field{margin-bottom:16px}
+.field-label{font-size:10px;text-transform:uppercase;letter-spacing:0.15em;color:var(--ink-3);margin-bottom:8px;display:block}
+.field-input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:var(--ink);font-size:15px;transition:border-color 0.15s}
+.field-input:focus{border-color:var(--yellow)}
+.field-input.amount{font-family:var(--display);font-size:32px;font-weight:500;letter-spacing:-0.02em;padding:18px 16px}
+
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:10px 14px;background:var(--bg);border:1px solid var(--line);border-radius:20px;font-size:12px;color:var(--ink-2);transition:all 0.15s;display:flex;align-items:center;gap:6px}
+.chip.active{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip .dot{width:6px;height:6px}
+
+.type-toggle{display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:16px}
+.type-btn{padding:12px;font-size:12px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-3);border-radius:8px;font-weight:500}
+.type-btn.active.in{background:var(--green);color:var(--bg)}
+.type-btn.active.out{background:var(--red);color:var(--ink)}
+
+.status-toggle{display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:16px}
+.status-btn{padding:12px;font-size:12px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-3);border-radius:8px;font-weight:500}
+.status-btn.active{background:var(--bg-3);color:var(--ink)}
+.status-btn.active.done{background:var(--ink);color:var(--bg)}
+
+.btn{display:block;width:100%;padding:16px;border-radius:12px;font-size:13px;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;transition:transform 0.1s}
+.btn:active{transform:scale(0.98)}
+.btn-primary{background:var(--yellow);color:var(--bg)}
+.btn-secondary{background:var(--bg-3);color:var(--ink);margin-top:8px}
+.btn-danger{background:transparent;color:var(--red);margin-top:8px;border:1px solid var(--line)}
+
+/* CONFIRM MINI */
+.confirm{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.confirm.open{display:flex}
+.confirm-box{background:var(--bg-2);border:1px solid var(--line);border-radius:16px;padding:24px;max-width:340px;width:100%}
+.confirm-title{font-family:var(--display);font-style:italic;font-weight:700;font-size:20px;margin-bottom:8px}
+.confirm-text{font-size:13px;color:var(--ink-2);margin-bottom:20px;line-height:1.6}
+.confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* SETTINGS MENU */
+.menu-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--ink-2);border-radius:8px;margin-bottom:4px}
+.menu-btn:active{background:var(--bg-3)}
+
+/* MARK PAID inline */
+.quick-pay{padding:6px 10px;background:var(--green);color:var(--bg);border-radius:8px;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-right:4px}
+.quick-pay:active{transform:scale(0.95)}
+
+@media (min-width:600px){
+  body{max-width:500px;margin:0 auto;border-left:1px solid var(--line);border-right:1px solid var(--line);min-height:100vh}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="brand">caixa<span>.</span></div>
+  <div class="month" id="monthLabel">—</div>
+</div>
+
+<div class="hero">
+  <div class="hero-label">Saldo do mês</div>
+  <div class="hero-value" id="saldo">R$ 0<span class="cents">,00</span></div>
+  <div class="hero-sub">
+    <div class="hero-sub-item">
+      <div class="hero-sub-label">A receber</div>
+      <div class="hero-sub-value pos" id="totReceber">R$ 0,00</div>
+    </div>
+    <div class="hero-sub-item">
+      <div class="hero-sub-label">A pagar</div>
+      <div class="hero-sub-value neg" id="totPagar">R$ 0,00</div>
+    </div>
+    <div class="hero-sub-item">
+      <div class="hero-sub-label">Em caixa</div>
+      <div class="hero-sub-value" id="totCaixa">R$ 0,00</div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="all">Tudo</button>
+  <button class="tab" data-tab="in">Entradas</button>
+  <button class="tab" data-tab="out">Saídas</button>
+  <button class="tab" data-tab="pending">Pendentes <span class="badge" id="pendBadge">0</span></button>
+</div>
+
+<div class="content">
+
+  <div class="section active" id="sec-all">
+    <div class="totals" id="bySource"></div>
+    <div class="list" id="listAll"></div>
+  </div>
+
+  <div class="section" id="sec-in">
+    <div class="totals" id="inTotals"></div>
+    <div class="list" id="listIn"></div>
+  </div>
+
+  <div class="section" id="sec-out">
+    <div class="totals" id="outTotals"></div>
+    <div class="list" id="listOut"></div>
+  </div>
+
+  <div class="section" id="sec-pending">
+    <div class="list" id="listPending"></div>
+  </div>
+
+</div>
+
+<button class="fab" id="fabAdd" aria-label="Adicionar">+</button>
+
+<!-- Modal de adicionar/editar -->
+<div class="modal" id="modal">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="modalTitle">Novo lançamento</div>
+
+    <div class="type-toggle">
+      <button class="type-btn in active" data-type="in">Entrada</button>
+      <button class="type-btn out" data-type="out">Saída</button>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Valor</label>
+      <input type="text" inputmode="decimal" class="field-input amount" id="fAmount" placeholder="0,00">
+    </div>
+
+    <div class="field">
+      <label class="field-label">Descrição</label>
+      <input type="text" class="field-input" id="fDesc" placeholder="Ex.: Anúncio Bar do Léo, conta de luz...">
+    </div>
+
+    <div class="field">
+      <label class="field-label" id="sourceLabel">Fonte de renda</label>
+      <div class="chips" id="sourceChips"></div>
+    </div>
+
+    <div class="status-toggle">
+      <button class="status-btn active" data-status="pending">Pendente</button>
+      <button class="status-btn done" data-status="done">Recebido / Pago</button>
+    </div>
+
+    <div class="row">
+      <div class="field" style="margin:0">
+        <label class="field-label">Pessoa / origem</label>
+        <input type="text" class="field-input" id="fParty" placeholder="Quem deve / pra quem">
+      </div>
+      <div class="field" style="margin:0">
+        <label class="field-label">Data</label>
+        <input type="date" class="field-input" id="fDate">
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btnSave">Salvar</button>
+    <button class="btn btn-danger" id="btnDelete" style="display:none">Excluir lançamento</button>
+    <button class="btn btn-secondary" id="btnCancel">Cancelar</button>
+  </div>
+</div>
+
+<!-- Confirm -->
+<div class="confirm" id="confirm">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confTitle">Confirmar?</div>
+    <div class="confirm-text" id="confText">—</div>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary" id="confNo" style="margin:0">Cancelar</button>
+      <button class="btn btn-primary" id="confYes" style="margin:0">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============= STATE =============
+const SOURCES = [
+  {id:'sul',  label:'No Sul do Maranhão', color:'#7fa9c7'},
+  {id:'sal',  label:'Salário',            color:'#9eb87a'},
+  {id:'cam',  label:'Campestre',          color:'#e6b450'},
+  {id:'mid',  label:'Midiart',            color:'#c084d6'},
+  {id:'out',  label:'Outros',             color:'#a8a098'},
+];
+const STORAGE_KEY = 'caixa_johann_v1';
+
+let entries = [];
+let editingId = null;
+let form = {type:'in', source:'sul', status:'pending'};
+
+// ============= STORAGE =============
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    entries = raw ? JSON.parse(raw) : [];
+  }catch(e){ entries = []; }
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+
+// ============= UTILS =============
+const BRL = v => 'R$ ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const parseAmount = s => {
+  if(!s) return 0;
+  s = String(s).replace(/[^\d,.\-]/g,'').replace(/\./g,'').replace(',','.');
+  return Number(s)||0;
+};
+const fmtDate = iso => {
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}`;
+};
+const todayISO = () => new Date().toISOString().slice(0,10);
+const monthLabel = () => {
+  const d = new Date();
+  return d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}).toUpperCase();
+};
+const sourceById = id => SOURCES.find(s=>s.id===id) || SOURCES[SOURCES.length-1];
+
+// ============= RENDER =============
+function render(){
+  document.getElementById('monthLabel').textContent = monthLabel();
+
+  const recebido = entries.filter(e=>e.type==='in' && e.status==='done').reduce((s,e)=>s+e.amount,0);
+  const pago     = entries.filter(e=>e.type==='out' && e.status==='done').reduce((s,e)=>s+e.amount,0);
+  const aReceber = entries.filter(e=>e.type==='in' && e.status==='pending').reduce((s,e)=>s+e.amount,0);
+  const aPagar   = entries.filter(e=>e.type==='out' && e.status==='pending').reduce((s,e)=>s+e.amount,0);
+  const caixa    = recebido - pago;
+  const saldoMes = (recebido + aReceber) - (pago + aPagar);
+
+  const sEl = document.getElementById('saldo');
+  const [int, cents] = BRL(saldoMes).replace('R$ ','').split(',');
+  sEl.innerHTML = `<span class="currency">R$</span>${int}<span class="cents">,${cents}</span>`;
+  sEl.style.color = saldoMes < 0 ? 'var(--red)' : 'var(--ink)';
+
+  document.getElementById('totReceber').textContent = BRL(aReceber);
+  document.getElementById('totPagar').textContent   = BRL(aPagar);
+  document.getElementById('totCaixa').textContent   = BRL(caixa);
+  document.getElementById('totCaixa').className = 'hero-sub-value ' + (caixa < 0 ? 'neg' : 'pos');
+
+  // Pendentes badge
+  const pendCount = entries.filter(e=>e.status==='pending').length;
+  document.getElementById('pendBadge').textContent = pendCount;
+
+  // BY SOURCE
+  const bySource = document.getElementById('bySource');
+  bySource.innerHTML = SOURCES.map(src=>{
+    const inDone = entries.filter(e=>e.source===src.id && e.type==='in' && e.status==='done').reduce((s,e)=>s+e.amount,0);
+    const inPend = entries.filter(e=>e.source===src.id && e.type==='in' && e.status==='pending').reduce((s,e)=>s+e.amount,0);
+    const outDone = entries.filter(e=>e.source===src.id && e.type==='out' && e.status==='done').reduce((s,e)=>s+e.amount,0);
+    const outPend = entries.filter(e=>e.source===src.id && e.type==='out' && e.status==='pending').reduce((s,e)=>s+e.amount,0);
+    const liquido = (inDone+inPend) - (outDone+outPend);
+    if(inDone+inPend+outDone+outPend === 0) return '';
+    return `<div class="totals-row">
+      <div class="totals-label"><span class="dot" style="background:${src.color}"></span>${src.label}</div>
+      <div class="totals-value ${liquido<0?'neg':liquido>0?'pos':'neutral'}">${BRL(liquido)}</div>
+    </div>`;
+  }).join('') || '<div class="totals-row"><div class="totals-label">Nenhum lançamento ainda</div></div>';
+
+  // IN totals
+  document.getElementById('inTotals').innerHTML = `
+    <div class="totals-row"><div class="totals-label">Recebido</div><div class="totals-value pos">${BRL(recebido)}</div></div>
+    <div class="totals-row"><div class="totals-label">A receber</div><div class="totals-value pos" style="opacity:0.7">${BRL(aReceber)}</div></div>
+  `;
+  document.getElementById('outTotals').innerHTML = `
+    <div class="totals-row"><div class="totals-label">Pago</div><div class="totals-value neg">${BRL(pago)}</div></div>
+    <div class="totals-row"><div class="totals-label">A pagar</div><div class="totals-value neg" style="opacity:0.7">${BRL(aPagar)}</div></div>
+  `;
+
+  // LISTS
+  const sorted = [...entries].sort((a,b)=>{
+    if(a.status==='pending' && b.status!=='pending') return -1;
+    if(b.status==='pending' && a.status!=='pending') return 1;
+    return (b.date||'').localeCompare(a.date||'');
+  });
+
+  renderList('listAll', sorted);
+  renderList('listIn', sorted.filter(e=>e.type==='in'));
+  renderList('listOut', sorted.filter(e=>e.type==='out'));
+  renderList('listPending', sorted.filter(e=>e.status==='pending'));
+}
+
+function renderList(elId, list){
+  const el = document.getElementById(elId);
+  if(list.length===0){
+    el.innerHTML = `<div class="empty"><div class="empty-icon">∅</div><div class="empty-text">Sem lançamentos por aqui.<br>Toque no + pra começar.</div></div>`;
+    return;
+  }
+  el.innerHTML = list.map(e=>{
+    const src = sourceById(e.source);
+    const sign = e.type==='in' ? '+' : '−';
+    const valClass = e.status==='pending' ? 'pending' : (e.type==='in' ? 'pos' : 'neg');
+    const meta = [
+      src.label,
+      e.party ? '· ' + e.party : '',
+      e.date ? '· ' + fmtDate(e.date) : '',
+      e.status==='pending' ? '· PENDENTE' : ''
+    ].filter(Boolean).join(' ');
+    return `<div class="item ${e.status==='pending'?'pending':''}" data-id="${e.id}">
+      <span class="item-dot" style="background:${src.color}"></span>
+      <div class="item-main">
+        <div class="item-desc">${escapeHTML(e.desc || '(sem descrição)')}</div>
+        <div class="item-meta">${escapeHTML(meta)}</div>
+      </div>
+      <div class="item-value ${valClass}">${sign}${BRL(e.amount).replace('R$ ','')}</div>
+      <div class="item-actions">
+        ${e.status==='pending' ? `<button class="quick-pay" data-pay="${e.id}">${e.type==='in'?'Recebi':'Paguei'}</button>` : ''}
+        <button class="icon-btn" data-edit="${e.id}" aria-label="Editar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escapeHTML(s){
+  return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ============= TABS =============
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('sec-'+t.dataset.tab).classList.add('active');
+  };
+});
+
+// ============= MODAL =============
+const modal = document.getElementById('modal');
+const fAmount = document.getElementById('fAmount');
+const fDesc = document.getElementById('fDesc');
+const fParty = document.getElementById('fParty');
+const fDate = document.getElementById('fDate');
+
+function buildSourceChips(){
+  const wrap = document.getElementById('sourceChips');
+  wrap.innerHTML = SOURCES.map(s=>`<button class="chip" data-src="${s.id}"><span class="dot" style="background:${s.color}"></span>${s.label}</button>`).join('');
+  wrap.querySelectorAll('.chip').forEach(c=>{
+    c.onclick = () => {
+      form.source = c.dataset.src;
+      wrap.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+      c.classList.add('active');
+    };
+  });
+}
+buildSourceChips();
+
+function syncForm(){
+  document.querySelectorAll('.type-btn').forEach(b=>b.classList.toggle('active', b.dataset.type===form.type));
+  document.querySelectorAll('.status-btn').forEach(b=>b.classList.toggle('active', b.dataset.status===form.status));
+  document.querySelectorAll('#sourceChips .chip').forEach(c=>c.classList.toggle('active', c.dataset.src===form.source));
+  document.getElementById('sourceLabel').textContent = form.type==='in' ? 'Fonte de renda' : 'Categoria de saída';
+}
+
+document.querySelectorAll('.type-btn').forEach(b=>{
+  b.onclick = () => { form.type = b.dataset.type; syncForm(); };
+});
+document.querySelectorAll('.status-btn').forEach(b=>{
+  b.onclick = () => { form.status = b.dataset.status; syncForm(); };
+});
+
+function openModal(entry){
+  if(entry){
+    editingId = entry.id;
+    document.getElementById('modalTitle').textContent = 'Editar lançamento';
+    document.getElementById('btnDelete').style.display = 'block';
+    form = {type:entry.type, source:entry.source, status:entry.status};
+    fAmount.value = entry.amount.toLocaleString('pt-BR',{minimumFractionDigits:2});
+    fDesc.value = entry.desc || '';
+    fParty.value = entry.party || '';
+    fDate.value = entry.date || todayISO();
+  } else {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'Novo lançamento';
+    document.getElementById('btnDelete').style.display = 'none';
+    form = {type:'in', source:'sul', status:'pending'};
+    fAmount.value = '';
+    fDesc.value = '';
+    fParty.value = '';
+    fDate.value = todayISO();
+  }
+  syncForm();
+  modal.classList.add('open');
+  setTimeout(()=>fAmount.focus(), 200);
+}
+function closeModal(){ modal.classList.remove('open'); }
+
+document.getElementById('fabAdd').onclick = () => openModal(null);
+document.getElementById('btnCancel').onclick = closeModal;
+modal.onclick = (e) => { if(e.target === modal) closeModal(); };
+
+// Mascara simples no valor
+fAmount.addEventListener('input', () => {
+  let v = fAmount.value.replace(/\D/g,'');
+  if(!v){ fAmount.value=''; return; }
+  v = (Number(v)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  fAmount.value = v;
+});
+
+document.getElementById('btnSave').onclick = () => {
+  const amount = parseAmount(fAmount.value);
+  if(!amount || amount<=0){ fAmount.focus(); return; }
+  const data = {
+    id: editingId || (Date.now().toString(36)+Math.random().toString(36).slice(2,6)),
+    type: form.type,
+    source: form.source,
+    status: form.status,
+    amount,
+    desc: fDesc.value.trim(),
+    party: fParty.value.trim(),
+    date: fDate.value || todayISO(),
+    createdAt: editingId ? (entries.find(x=>x.id===editingId)?.createdAt || Date.now()) : Date.now()
+  };
+  if(editingId){
+    const i = entries.findIndex(e=>e.id===editingId);
+    if(i>=0) entries[i] = data;
+  } else {
+    entries.push(data);
+  }
+  save();
+  render();
+  closeModal();
+};
+
+document.getElementById('btnDelete').onclick = () => {
+  if(!editingId) return;
+  askConfirm('Excluir lançamento?', 'Essa ação não tem volta.', () => {
+    entries = entries.filter(e=>e.id!==editingId);
+    save();
+    render();
+    closeModal();
+  });
+};
+
+// Lista actions (delegação)
+document.body.addEventListener('click', (e) => {
+  const editId = e.target.closest('[data-edit]')?.dataset.edit;
+  const payId = e.target.closest('[data-pay]')?.dataset.pay;
+  if(payId){
+    const ent = entries.find(x=>x.id===payId);
+    if(ent){ ent.status='done'; save(); render(); }
+    return;
+  }
+  if(editId){
+    const ent = entries.find(x=>x.id===editId);
+    if(ent) openModal(ent);
+  }
+});
+
+// ============= CONFIRM =============
+const conf = document.getElementById('confirm');
+function askConfirm(title, text, onYes){
+  document.getElementById('confTitle').textContent = title;
+  document.getElementById('confText').textContent = text;
+  conf.classList.add('open');
+  document.getElementById('confYes').onclick = () => { conf.classList.remove('open'); onYes(); };
+  document.getElementById('confNo').onclick  = () => { conf.classList.remove('open'); };
+}
+
+// ============= INIT =============
+load();
+render();
+</script>
+</body>
+</html>
