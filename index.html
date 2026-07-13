@@ -67,9 +67,10 @@ input[type=number]{-moz-appearance:textfield}
 .hero-value.neg{color:var(--red)}
 .hero-value .currency{font-size:22px;color:var(--ink-2);margin-right:6px;vertical-align:top;display:inline-block;margin-top:8px}
 .hero-value .cents{color:var(--ink-2);font-size:28px}
-.hero-sub{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.hero-sub{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.hero-sub + .hero-sub{margin-top:6px;padding-top:6px;border-top:none}
 .hero-sub-label{font-size:10px;text-transform:uppercase;letter-spacing:0.15em;color:var(--ink-3)}
-.hero-sub-value{font-family:var(--display);font-weight:500;font-size:18px;letter-spacing:-0.01em;color:var(--ink)}
+.hero-sub-value{font-family:var(--display);font-weight:500;font-size:16px;letter-spacing:-0.01em;color:var(--ink-2)}
 .hero-sub-value.pos{color:var(--green)}
 .hero-sub-value.neg{color:var(--red)}
 
@@ -275,10 +276,14 @@ input[type=number]{-moz-appearance:textfield}
 </div>
 
 <div class="hero">
-  <div class="hero-label"><span class="pulse"></span>Saldo acumulado <span id="vaultLabel">geral</span></div>
+  <div class="hero-label"><span class="pulse"></span><span id="heroLabelText">Saldo no fim do mês</span></div>
   <div class="hero-value" id="saldoAcumulado">R$ 0<span class="cents">,00</span></div>
   <div class="hero-sub">
-    <span class="hero-sub-label">Em caixa deste mês</span>
+    <span class="hero-sub-label" id="prevMonthLabel">Veio do mês anterior</span>
+    <span class="hero-sub-value" id="prevMonthValue">R$ 0,00</span>
+  </div>
+  <div class="hero-sub">
+    <span class="hero-sub-label">Movimento deste mês</span>
     <span class="hero-sub-value" id="emCaixa">R$ 0,00</span>
   </div>
 </div>
@@ -607,8 +612,12 @@ function render(){
 
   document.getElementById('vaultLabel').textContent = activeVault==='all' ? 'geral' : VAULTS.find(v=>v.id===activeVault).short.toLowerCase();
 
-  // Saldo acumulado: soma TUDO que já foi feito (status=done), respeitando o cofre selecionado
-  // Considera todos os meses até o final do mês atualmente exibido (inclusive)
+  // Título do hero: "Saldo no fim de [mês]"
+  const monthShortName = viewMonth.toLocaleDateString('pt-BR',{month:'long'});
+  const monthNameCap = monthShortName.charAt(0).toUpperCase()+monthShortName.slice(1);
+  document.getElementById('heroLabelText').textContent = `Saldo no fim de ${monthNameCap}`;
+
+  // Saldo até o fim do mês exibido (acumulado)
   const endOfViewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth()+1, 0).toISOString().slice(0,10);
   const acumEntries = state.entries.filter(e=>{
     if(activeVault !== 'all' && e.vault !== activeVault) return false;
@@ -620,12 +629,42 @@ function render(){
   const acumOut = acumEntries.filter(e=>e.type==='out').reduce((s,e)=>s+e.amount,0);
   const saldoAcumulado = acumIn - acumOut;
 
+  // Saldo no fim do mês ANTERIOR (o que "veio" pra este mês)
+  const endOfPrevMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 0).toISOString().slice(0,10);
+  const prevEntries = state.entries.filter(e=>{
+    if(activeVault !== 'all' && e.vault !== activeVault) return false;
+    if(e.status !== 'done') return false;
+    if(e.date > endOfPrevMonth) return false;
+    return true;
+  });
+  const prevIn  = prevEntries.filter(e=>e.type==='in').reduce((s,e)=>s+e.amount,0);
+  const prevOut = prevEntries.filter(e=>e.type==='out').reduce((s,e)=>s+e.amount,0);
+  const saldoPrev = prevIn - prevOut;
+
+  // Nome do mês anterior
+  const prevMonthDate = new Date(viewMonth.getFullYear(), viewMonth.getMonth()-1, 1);
+  const prevMonthName = prevMonthDate.toLocaleDateString('pt-BR',{month:'long'});
+  const prevMonthCap = prevMonthName.charAt(0).toUpperCase()+prevMonthName.slice(1);
+
   const acumEl = document.getElementById('saldoAcumulado');
   const [aInt, aCents] = BRL(saldoAcumulado).replace('R$ ','').split(',');
   acumEl.innerHTML = `<span class="currency">R$</span>${aInt}<span class="cents">,${aCents}</span>`;
   acumEl.className = 'hero-value' + (saldoAcumulado < 0 ? ' neg' : '');
 
-  // Em caixa deste mês
+  // Se não existe movimentação antes desse mês, esconde a linha "veio do anterior"
+  const hasPrev = prevEntries.length > 0;
+  const prevRow = document.getElementById('prevMonthLabel').parentElement;
+  if(hasPrev){
+    prevRow.style.display = 'flex';
+    document.getElementById('prevMonthLabel').textContent = `Veio de ${prevMonthCap}`;
+    const prevValEl = document.getElementById('prevMonthValue');
+    prevValEl.textContent = BRL(saldoPrev);
+    prevValEl.className = 'hero-sub-value ' + (saldoPrev < 0 ? 'neg' : saldoPrev > 0 ? 'pos' : '');
+  } else {
+    prevRow.style.display = 'none';
+  }
+
+  // Movimento deste mês
   const emCaixaEl = document.getElementById('emCaixa');
   emCaixaEl.textContent = (emCaixa>=0?'+':'') + BRL(emCaixa);
   emCaixaEl.className = 'hero-sub-value ' + (emCaixa < 0 ? 'neg' : emCaixa > 0 ? 'pos' : '');
