@@ -744,13 +744,14 @@ function render(){
   renderTabs();
   if(state.activeTab==='hoje') el.innerHTML = renderHoje();
   else if(state.activeTab==='mes') { el.innerHTML = renderMes(); drawChart(); }
-  else if(state.activeTab==='contas') el.innerHTML = renderContas();
+  else if(state.activeTab==='contas-centro') el.innerHTML = renderContas('Centro');
+  else if(state.activeTab==='contas-jardim') el.innerHTML = renderContas('Jardim São Luís');
   else if(state.activeTab==='extrato') el.innerHTML = renderExtrato();
   attachEvents();
 }
 
 function renderTabs(){
-  const tabs = [['hoje','Hoje'],['mes','Livro do Mês'],['contas','Contas a Pagar'],['extrato','Extrato PDF']];
+  const tabs = [['hoje','Hoje'],['mes','Livro do Mês'],['contas-centro','Contas · Centro'],['contas-jardim','Contas · Jardim'],['extrato','Extrato PDF']];
   document.getElementById('tabs').innerHTML = tabs.map(([k,l])=>
     `<button class="tab-btn ${state.activeTab===k?'active':''}" data-tab="${k}">${l}</button>`
   ).join('') + `<button class="tab-btn" data-act="logout" style="flex:0 0 auto; color:var(--muted);" title="Sair">${USERS[state.currentUser].nome} · Sair</button>`;
@@ -980,22 +981,26 @@ function unidadeBadgeClass(u){
 }
 function unidadeLabel(u){ return u || 'Centro'; }
 
-function renderContas(){
+function renderContas(unidadeAtiva){
   const key = state.currentMonth;
   loadPayables(key);
   const todos = (state.payablesCache[key]||[]).sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
-  const filtro = state.filtroUnidade || 'Todas';
-  const list = filtro==='Todas' ? todos : todos.filter(p=>(p.unidade||'Centro')===filtro);
+  const list = todos.filter(p=>(p.unidade||'Centro')===unidadeAtiva);
 
-  // Totais por unidade
-  const pendenteCentro = todos.filter(p=>p.status==='pendente'&&(p.unidade||'Centro')==='Centro').reduce((s,p)=>s+restanteAPagar(p,key),0);
-  const pendenteJardim = todos.filter(p=>p.status==='pendente'&&p.unidade==='Jardim São Luís').reduce((s,p)=>s+restanteAPagar(p,key),0);
-  const totalPendente = todos.filter(p=>p.status==='pendente').reduce((s,p)=>s+restanteAPagar(p,key),0);
-  const totalPago = todos.filter(p=>p.status==='pago').reduce((s,p)=>s+p.amount,0);
+  // Totais da unidade ativa
+  const totalPendente = list.filter(p=>p.status==='pendente').reduce((s,p)=>s+restanteAPagar(p,key),0);
+  const totalPago = list.filter(p=>p.status==='pago').reduce((s,p)=>s+p.amount,0);
 
-  const adiantamentosPorFunc = FUNCIONARIOS
+  // Adiantamentos só dos funcionários desta unidade
+  const funcUnidade = unidadeAtiva==='Centro'
+    ? ['Juan','Marcus','Raiane','Adrielly','João Vitor','Diego']
+    : ['Diego Natan','Filipe','Ângelo Gabriel','Wallison','Sophia','Everson','Andressa','Camila'];
+  const adiantamentosPorFunc = funcUnidade
     .map(n=>({nome:n, valor: sumAdiantamentos(key, n)}))
     .filter(x=>x.valor>0);
+  // Pré-selecionar unidade correta no formulário
+  if(state.payableForm.unidade!==unidadeAtiva) state.payableForm.unidade = unidadeAtiva;
+  const uBadgeClass = unidadeAtiva==='Centro'?'badge-centro':'badge-jardim';
   return `
     <div class="month-nav">
       <button data-act="month-prev">‹</button>
@@ -1003,12 +1008,13 @@ function renderContas(){
       <button data-act="month-next">›</button>
     </div>
     <div class="card">
-      <div class="grid3">
-        <div class="stat-box"><div class="n mono" style="color:var(--amber);">${fmtMoney(totalPendente)}</div><div class="l">Total pendente</div></div>
-        <div class="stat-box"><div class="n mono" style="color:#C08A45;">${fmtMoney(pendenteCentro)}</div><div class="l">Centro</div></div>
-        <div class="stat-box"><div class="n mono" style="color:#5E94B4;">${fmtMoney(pendenteJardim)}</div><div class="l">Jardim</div></div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <span class="badge ${uBadgeClass}" style="font-size:12px; padding:5px 14px;">${unidadeAtiva}</span>
       </div>
-      <div style="margin-top:10px; text-align:right; font-size:11px; color:var(--muted);">Pago: ${fmtMoney(totalPago)}</div>
+      <div class="grid2">
+        <div class="stat-box"><div class="n mono" style="color:var(--amber);">${fmtMoney(totalPendente)}</div><div class="l">Pendente</div></div>
+        <div class="stat-box"><div class="n mono val-entrada">${fmtMoney(totalPago)}</div><div class="l">Pago</div></div>
+      </div>
     </div>
     ${adiantamentosPorFunc.length>0 ? `
     <div class="card">
@@ -1022,10 +1028,7 @@ function renderContas(){
     ${payableFormHTML()}
     <div class="card">
       <h3>Contas do mês</h3>
-      <div class="filtro-tabs">
-        ${['Todas','Centro','Jardim São Luís'].map(u=>`<button class="filtro-tab ${filtro===u?'active':''}" data-act="filtro-unidade" data-val="${u}">${u}</button>`).join('')}
-      </div>
-      ${list.length===0 ? '<div class="empty">Nenhuma conta nesta unidade.</div>' : `
+      ${list.length===0 ? `<div class="empty">Nenhuma conta cadastrada para ${unidadeAtiva} neste mês.</div>` : `
       <table>
         <tr><th>Venc.</th><th>Descrição</th><th class="center">Unidade</th><th class="right">Valor</th><th class="center">Status</th><th></th></tr>
         ${list.map(p=>{
@@ -1184,10 +1187,6 @@ function attachEvents(){
         await addPayable({ dueDate, category, description, amount, funcionario, unidade });
       }
       state.payableForm.description=''; state.payableForm.amount=''; state.payableForm.funcionario='';
-    }
-    else if(act==='filtro-unidade'){
-      state.filtroUnidade = b.dataset.val;
-      render();
     }
     else if(act==='edit-payable'){
       const key = b.dataset.key, id = b.dataset.id;
