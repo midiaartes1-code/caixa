@@ -489,11 +489,11 @@ function shiftMonth(key, delta){
 
 /* ---------- state ---------- */
 let state = {
-  activeTab: 'hoje',
+  activeTab: 'hoje-centro',
   currentMonth: monthKeyOf(todayISO()),
   monthCache: {},
   payablesCache: {},
-  entryForm: { type:'entrada', date: todayISO(), category: ENTRADA_CATS[0], description:'', amount:'', funcionario:'' },
+  entryForm: { type:'entrada', date: todayISO(), category: ENTRADA_CATS[0], description:'', amount:'', funcionario:'', unidade:'Centro' },
   payableForm: { dueDate: todayISO(), category: PAYABLE_CATS[0], description:'', amount:'', funcionario:'', unidade:'Centro' },
   filtroUnidade: 'Todas',
   extrato: { start:'', end:'', result:null },
@@ -524,17 +524,20 @@ async function savePayables(key){
   await setData('contas', key, state.payablesCache[key]);
 }
 
-function monthTotals(key){
+function monthTotals(key, unidade){
   const data = state.monthCache[key] || {openingBalance:0, entries:[]};
-  const entries = [...data.entries].sort((a,b)=> a.date.localeCompare(b.date) || 0);
-  let running = data.openingBalance;
+  const byUnit = e => !unidade || (e.unidade||'Centro') === unidade;
+  const obKey = unidade==='Jardim São Luís'?'openingBalanceJardim':'openingBalance';
+  const ob = data[obKey] || 0;
+  const entries = [...data.entries].filter(byUnit).sort((a,b)=> a.date.localeCompare(b.date) || 0);
+  let running = ob;
   const rows = entries.map(e=>{
     running += (e.type==='entrada' ? e.amount : -e.amount);
     return {...e, saldo: running};
   });
   const totalEntrada = entries.filter(e=>e.type==='entrada').reduce((s,e)=>s+e.amount,0);
   const totalSaida = entries.filter(e=>e.type==='saida').reduce((s,e)=>s+e.amount,0);
-  return { rows, totalEntrada, totalSaida, saldoFinal: running, openingBalance: data.openingBalance };
+  return { rows, totalEntrada, totalSaida, saldoFinal: running, openingBalance: ob };
 }
 
 function sumAdiantamentos(monthKey, funcionario){
@@ -585,6 +588,7 @@ async function addEntry(form){
     id: genId(), date: form.date, type: form.type, category: form.category,
     description: form.description || form.category, amount: parseFloat(form.amount),
     funcionario: form.funcionario || null,
+    unidade: form.unidade || 'Centro',
     criadoPor: USERS[state.currentUser] ? USERS[state.currentUser].nome : state.currentUser
   });
   await saveMonth(key);
@@ -621,9 +625,10 @@ async function updateEntry(oldKey, id, form){
   }
   render();
 }
-async function updateOpeningBalance(key, val){
+async function updateOpeningBalance(key, val, unidade){
   await loadMonth(key);
-  state.monthCache[key].openingBalance = parseFloat(val)||0;
+  const obKey = unidade==='Jardim São Luís' ? 'openingBalanceJardim' : 'openingBalance';
+  state.monthCache[key][obKey] = parseFloat(val)||0;
   await saveMonth(key);
   render();
 }
@@ -742,8 +747,10 @@ function render(){
   }
 
   renderTabs();
-  if(state.activeTab==='hoje') el.innerHTML = renderHoje();
-  else if(state.activeTab==='mes') { el.innerHTML = renderMes(); drawChart(); }
+  if(state.activeTab==='hoje-centro') el.innerHTML = renderHoje('Centro');
+  else if(state.activeTab==='hoje-jardim') el.innerHTML = renderHoje('Jardim São Luís');
+  else if(state.activeTab==='mes-centro') { el.innerHTML = renderMes('Centro'); drawChart('Centro'); }
+  else if(state.activeTab==='mes-jardim') { el.innerHTML = renderMes('Jardim São Luís'); drawChart('Jardim São Luís'); }
   else if(state.activeTab==='contas-centro') el.innerHTML = renderContas('Centro');
   else if(state.activeTab==='contas-jardim') el.innerHTML = renderContas('Jardim São Luís');
   else if(state.activeTab==='extrato') el.innerHTML = renderExtrato();
@@ -751,7 +758,15 @@ function render(){
 }
 
 function renderTabs(){
-  const tabs = [['hoje','Hoje'],['mes','Livro do Mês'],['contas-centro','Contas · Centro'],['contas-jardim','Contas · Jardim'],['extrato','Extrato PDF']];
+  const tabs = [
+    ['hoje-centro','Hoje · Centro'],
+    ['hoje-jardim','Hoje · Jardim'],
+    ['mes-centro','Mês · Centro'],
+    ['mes-jardim','Mês · Jardim'],
+    ['contas-centro','Contas · Centro'],
+    ['contas-jardim','Contas · Jardim'],
+    ['extrato','Extrato PDF']
+  ];
   document.getElementById('tabs').innerHTML = tabs.map(([k,l])=>
     `<button class="tab-btn ${state.activeTab===k?'active':''}" data-tab="${k}">${l}</button>`
   ).join('') + `<button class="tab-btn" data-act="logout" style="flex:0 0 auto; color:var(--muted);" title="Sair">${USERS[state.currentUser].nome} · Sair</button>`;
@@ -775,6 +790,10 @@ function entryFormHTML(prefix){
         <select id="ef-cat">${cats.map(c=>`<option ${c===f.category?'selected':''}>${c}</option>`).join('')}</select>
       </div>
     </div>
+    <label>Unidade</label>
+    <select id="ef-unidade" style="margin-bottom:10px;">
+      ${UNIDADES.map(u=>`<option ${u===f.unidade?'selected':''}>${u}</option>`).join('')}
+    </select>
     ${precisaFuncionario ? `
     <label>Funcionário</label>
     <select id="ef-func">
@@ -795,22 +814,30 @@ function entryFormHTML(prefix){
   </div>`;
 }
 
-function renderHoje(){
+function renderHoje(unidadeAtiva){
   const today = todayISO();
   const key = monthKeyOf(today);
-  loadMonth(key); // fire and forget; will be cached by first load at boot
+  loadMonth(key);
   const data = state.monthCache[key] || {openingBalance:0, entries:[]};
-  const todays = data.entries.filter(e=>e.date===today).sort((a,b)=>0);
+  // Filtrar por unidade (entries sem unidade = Centro por padrão)
+  const byUnit = e => (e.unidade||'Centro') === unidadeAtiva;
+  const todays = data.entries.filter(e=>e.date===today && byUnit(e));
   const totE = todays.filter(e=>e.type==='entrada').reduce((s,e)=>s+e.amount,0);
   const totS = todays.filter(e=>e.type==='saida').reduce((s,e)=>s+e.amount,0);
-  const ateHoje = data.entries.filter(e=>e.date<=today);
-  const saldoTotal = data.openingBalance + ateHoje.reduce((s,e)=> s + (e.type==='entrada'?e.amount:-e.amount), 0);
+  const ateHoje = data.entries.filter(e=>e.date<=today && byUnit(e));
+  const obKey = unidadeAtiva==='Centro'?'openingBalance':'openingBalanceJardim';
+  const ob = data[obKey] || 0;
+  const saldoTotal = ob + ateHoje.reduce((s,e)=> s + (e.type==='entrada'?e.amount:-e.amount), 0);
+  const uBadgeClass = unidadeAtiva==='Centro'?'badge-centro':'badge-jardim';
+  // Pré-selecionar unidade no formulário
+  if(state.entryForm.unidade!==unidadeAtiva) state.entryForm.unidade = unidadeAtiva;
 
   return `
     <div class="saldo-card">
+      <div style="margin-bottom:6px;"><span class="badge ${uBadgeClass}">${unidadeAtiva}</span></div>
       <div class="label-saldo">Saldo em caixa agora</div>
       <div class="valor-saldo" style="${saldoTotal<0?'color:var(--saida);':''}">${fmtMoney(saldoTotal)}</div>
-      <div class="descricao-saldo">Saldo inicial do mês + tudo lançado até hoje</div>
+      <div class="descricao-saldo">Saldo inicial + tudo lançado até hoje nesta unidade</div>
     </div>
     <div class="card">
       <h3>Hoje · ${fmtDateBR(today)}</h3>
@@ -823,7 +850,7 @@ function renderHoje(){
     ${entryFormHTML()}
     <div class="card">
       <h3>Lançamentos de hoje</h3>
-      ${todays.length===0 ? '<div class="empty">Nada lançado hoje ainda.</div>' : `
+      ${todays.length===0 ? `<div class="empty">Nada lançado hoje para ${unidadeAtiva}.</div>` : `
       <table>
         <tr><th>Tipo</th><th>Categoria</th><th>Descrição</th><th class="right">Valor</th><th></th></tr>
         ${todays.map(e=>`
@@ -842,15 +869,19 @@ function renderHoje(){
   `;
 }
 
-function renderMes(){
+function renderMes(unidadeAtiva){
   const key = state.currentMonth;
   loadMonth(key);
-  const t = monthTotals(key);
+  const t = monthTotals(key, unidadeAtiva);
   const entradasPorCat = {};
   t.rows.filter(e=>e.type==='entrada').forEach(e=>{
     entradasPorCat[e.category] = (entradasPorCat[e.category]||0) + e.amount;
   });
   const catList = Object.entries(entradasPorCat).sort((a,b)=>b[1]-a[1]);
+  const uBadgeClass = unidadeAtiva==='Centro'?'badge-centro':'badge-jardim';
+  const obInputId = unidadeAtiva==='Centro'?'opening-balance':'opening-balance-jardim';
+  // Pré-selecionar unidade no formulário de lançamento
+  if(state.entryForm.unidade!==unidadeAtiva) state.entryForm.unidade = unidadeAtiva;
   return `
     <div class="month-nav">
       <button data-act="month-prev">‹</button>
@@ -858,9 +889,10 @@ function renderMes(){
       <button data-act="month-next">›</button>
     </div>
     <div class="card">
+      <div style="margin-bottom:8px;"><span class="badge ${uBadgeClass}">${unidadeAtiva}</span></div>
       <h3>Resumo do mês</h3>
-      <label>Saldo inicial do mês (transportado do mês anterior)</label>
-      <input type="number" step="0.01" id="opening-balance" value="${t.openingBalance}">
+      <label>Saldo inicial (${unidadeAtiva})</label>
+      <input type="number" step="0.01" id="${obInputId}" value="${t.openingBalance}">
       <div class="grid3" style="margin-top:8px;">
         <div class="stat-box"><div class="n mono val-entrada">${fmtMoney(t.totalEntrada)}</div><div class="l">Entradas</div></div>
         <div class="stat-box"><div class="n mono val-saida">${fmtMoney(t.totalSaida)}</div><div class="l">Saídas</div></div>
@@ -898,9 +930,9 @@ function renderMes(){
   `;
 }
 
-function drawChart(){
+function drawChart(unidade){
   const key = state.currentMonth;
-  const t = monthTotals(key);
+  const t = monthTotals(key, unidade);
   const canvas = document.getElementById('month-chart');
   if(!canvas) return;
   const byDay = {};
@@ -914,8 +946,8 @@ function drawChart(){
     data: {
       labels: days.map(d=>d.slice(8,10)),
       datasets: [
-        { type:'bar', label:'Entradas', data: days.map(d=>byDay[d].entrada), backgroundColor:'#5E9468' },
-        { type:'bar', label:'Saídas', data: days.map(d=>byDay[d].saida), backgroundColor:'#BD5B50' },
+        { type:'bar', label:'Entradas', data: days.map(d=>byDay[d].entrada), backgroundColor:'#93C404' },
+        { type:'bar', label:'Saídas', data: days.map(d=>byDay[d].saida), backgroundColor:'#E05047' },
         { type:'line', label:'Saldo', data: (()=>{ let r=t.openingBalance; const arr=[]; days.forEach(d=>{ r += byDay[d].entrada - byDay[d].saida; arr.push(r); }); return arr; })(),
           borderColor:'#C08A45', backgroundColor:'transparent', tension:.3, yAxisID:'y1' }
       ]
@@ -923,11 +955,11 @@ function drawChart(){
     options: {
       responsive:true, maintainAspectRatio:false,
       scales: {
-        y: { grid:{color:'#3A332A'}, ticks:{color:'#A89A87'} },
+        y: { grid:{color:'#2A302A'}, ticks:{color:'#7A8A7A'} },
         y1: { position:'right', grid:{display:false}, ticks:{color:'#C08A45'} },
-        x: { grid:{display:false}, ticks:{color:'#A89A87'} }
+        x: { grid:{display:false}, ticks:{color:'#7A8A7A'} }
       },
-      plugins: { legend:{ labels:{ color:'#EDE4D3' } } }
+      plugins: { legend:{ labels:{ color:'#FFFFFF' } } }
     }
   });
 }
@@ -1144,12 +1176,14 @@ function attachEvents(){
       const amount = document.getElementById('ef-amount').value;
       const funcEl = document.getElementById('ef-func');
       const funcionario = funcEl ? funcEl.value : '';
+      const unidadeEl = document.getElementById('ef-unidade');
+      const unidade = unidadeEl ? unidadeEl.value : state.entryForm.unidade || 'Centro';
       if(!date || !amount || parseFloat(amount)<=0){ alert('Preencha data e um valor válido.'); return; }
       if(state.editingEntry){
-        await updateEntry(state.editingEntry.key, state.editingEntry.id, { type: state.entryForm.type, date, category, description, amount, funcionario });
+        await updateEntry(state.editingEntry.key, state.editingEntry.id, { type: state.entryForm.type, date, category, description, amount, funcionario, unidade });
         state.editingEntry = null;
       } else {
-        await addEntry({ type: state.entryForm.type, date, category, description, amount, funcionario });
+        await addEntry({ type: state.entryForm.type, date, category, description, amount, funcionario, unidade });
       }
       state.entryForm.description = ''; state.entryForm.amount = ''; state.entryForm.funcionario = '';
     }
@@ -1159,12 +1193,12 @@ function attachEvents(){
       const entry = state.monthCache[key].entries.find(e=>e.id===id);
       if(!entry) return;
       state.editingEntry = { key, id };
-      state.entryForm = { type: entry.type, date: entry.date, category: entry.category, description: entry.description, amount: entry.amount, funcionario: entry.funcionario || '' };
+      state.entryForm = { type: entry.type, date: entry.date, category: entry.category, description: entry.description, amount: entry.amount, funcionario: entry.funcionario || '', unidade: entry.unidade || 'Centro' };
       render();
     }
     else if(act==='cancel-edit-entry'){
       state.editingEntry = null;
-      state.entryForm = { type:'entrada', date: todayISO(), category: ENTRADA_CATS[0], description:'', amount:'', funcionario:'' };
+      state.entryForm = { type:'entrada', date: todayISO(), category: ENTRADA_CATS[0], description:'', amount:'', funcionario:'', unidade: state.entryForm.unidade || 'Centro' };
       render();
     }
     else if(act==='del-entry'){ await deleteEntry(b.dataset.key, b.dataset.id); }
@@ -1235,7 +1269,9 @@ function attachEvents(){
   }
 
   const ob = document.getElementById('opening-balance');
-  if(ob){ ob.onchange = async ()=>{ await updateOpeningBalance(state.currentMonth, ob.value); }; }
+  if(ob){ ob.onchange = async ()=>{ await updateOpeningBalance(state.currentMonth, ob.value, 'Centro'); }; }
+  const obJ = document.getElementById('opening-balance-jardim');
+  if(obJ){ obJ.onchange = async ()=>{ await updateOpeningBalance(state.currentMonth, obJ.value, 'Jardim São Luís'); }; }
 
   ['ef-desc','ef-amount','pf-desc','pf-amount'].forEach(id=>{
     const elm = document.getElementById(id);
@@ -1249,6 +1285,8 @@ function attachEvents(){
 
   const efCat = document.getElementById('ef-cat');
   if(efCat) efCat.onchange = ()=>{ state.entryForm.category = efCat.value; state.entryForm.funcionario=''; render(); };
+  const efUnidade = document.getElementById('ef-unidade');
+  if(efUnidade) efUnidade.onchange = ()=>{ state.entryForm.unidade = efUnidade.value; };
   const efFunc = document.getElementById('ef-func');
   if(efFunc) efFunc.onchange = ()=>{ state.entryForm.funcionario = efFunc.value; render(); };
   const pfUnidade = document.getElementById('pf-unidade');
