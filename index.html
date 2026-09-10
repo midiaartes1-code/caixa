@@ -511,7 +511,7 @@ async function loadMonth(key){
   return d;
 }
 async function saveMonth(key){
-  await setData('meses', key, state.monthCache[key]);
+  return await setData('meses', key, state.monthCache[key]);
 }
 async function loadPayables(key){
   if(state.payablesCache[key]) return state.payablesCache[key];
@@ -521,7 +521,7 @@ async function loadPayables(key){
   return d;
 }
 async function savePayables(key){
-  await setData('contas', key, state.payablesCache[key]);
+  return await setData('contas', key, state.payablesCache[key]);
 }
 
 function monthTotals(key, unidade){
@@ -707,30 +707,58 @@ async function togglePaid(key, id){
     }
     const entryId = genId();
     if(valorAPagar > 0){
+      // IMPORTANTE: precisa herdar a unidade (e quem lançou) da própria conta.
+      // Sem isso o lançamento cai como "Centro" por padrão mesmo quando a conta
+      // é do Jardim São Luís, e o caixa da unidade errada fica errado.
       state.monthCache[entryKey].entries.push({
         id: entryId, date: paymentDate, type:'saida',
         category: PAYABLE_TO_SAIDA[p.category] || 'Outros',
         description: 'Pagamento: ' + p.description + (valorAPagar !== p.amount ? ' (já descontado adiantamento)' : ''),
         amount: valorAPagar,
-        funcionario: p.funcionario || null
+        funcionario: p.funcionario || null,
+        unidade: p.unidade || 'Centro',
+        criadoPor: USERS[state.currentUser] ? USERS[state.currentUser].nome : state.currentUser
       });
-      await saveMonth(entryKey);
+      const savedMonth = await saveMonth(entryKey);
+      if(!savedMonth){
+        // A gravação falhou (setData já mostrou o alerta de conexão). Desfaz a
+        // alteração local pra não ficar mostrando na tela um lançamento que na
+        // verdade não foi salvo, e não marca a conta como paga.
+        state.monthCache[entryKey].entries = state.monthCache[entryKey].entries.filter(e=>e.id!==entryId);
+        alert('Não foi possível registrar a saída no caixa. A conta continua PENDENTE — tente marcar como paga de novo quando a conexão estiver ok.');
+        render();
+        return;
+      }
     }
     p.status = 'pago';
     p.paidEntryId = valorAPagar > 0 ? entryId : null;
     p.paidEntryMonth = valorAPagar > 0 ? entryKey : null;
   } else {
     const entryKey = p.paidEntryMonth || key;
+    let removedEntry = null, removedIdx = -1;
     if(p.paidEntryId){
       await loadMonth(entryKey);
+      removedIdx = state.monthCache[entryKey].entries.findIndex(e=>e.id===p.paidEntryId);
+      if(removedIdx !== -1) removedEntry = state.monthCache[entryKey].entries[removedIdx];
       state.monthCache[entryKey].entries = state.monthCache[entryKey].entries.filter(e=>e.id!==p.paidEntryId);
-      await saveMonth(entryKey);
+      const savedMonth = await saveMonth(entryKey);
+      if(!savedMonth){
+        // Mesma lógica: se não salvou, devolve o lançamento pro cache local e
+        // não mexe no status da conta, pra não desalinhar caixa x contas a pagar.
+        if(removedEntry) state.monthCache[entryKey].entries.splice(removedIdx, 0, removedEntry);
+        alert('Não foi possível desfazer o lançamento no caixa. Tente novamente quando a conexão estiver ok.');
+        render();
+        return;
+      }
     }
     p.status = 'pendente';
     p.paidEntryId = null;
     p.paidEntryMonth = null;
   }
-  await savePayables(key);
+  const savedPayable = await savePayables(key);
+  if(!savedPayable){
+    alert('O status da conta não foi salvo. Tente novamente.');
+  }
   render();
 }
 
