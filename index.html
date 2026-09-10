@@ -611,7 +611,8 @@ async function updateEntry(oldKey, id, form){
     ...original,
     date: form.date, type: form.type, category: form.category,
     description: form.description || form.category, amount: parseFloat(form.amount),
-    funcionario: form.funcionario || null
+    funcionario: form.funcionario || null,
+    unidade: form.unidade || original.unidade || 'Centro'
   };
   if(newKey === oldKey){
     state.monthCache[oldKey].entries[idx] = updated;
