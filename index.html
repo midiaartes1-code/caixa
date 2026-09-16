@@ -354,6 +354,7 @@ tr:hover td{background:rgba(255,255,255,.018);}
 .badge-centro{background:rgba(192,138,69,.15); color:#C08A45; border:1px solid rgba(192,138,69,.3);}
 .badge-jardim{background:rgba(94,148,180,.15); color:#5E94B4; border:1px solid rgba(94,148,180,.3);}
 .badge-ambas{background:rgba(147,196,4,.12); color:var(--entrada); border:1px solid rgba(147,196,4,.25);}
+.badge-geral{background:rgba(94,148,180,.1); color:#8BB8D4; border:1px solid rgba(94,148,180,.3);}
 .filtro-tabs{display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;}
 .filtro-tab{padding:6px 14px; border-radius:20px; border:1px solid var(--line); background:none; color:var(--muted); font-size:11.5px; cursor:pointer; font-family:'Oswald',sans-serif; letter-spacing:.04em;}
 .filtro-tab.active{background:var(--surface2); color:var(--text); border-color:var(--green);}
@@ -454,12 +455,12 @@ async function setData(collectionName, key, value){
 
 /* ---------- constants ---------- */
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const ENTRADA_CATS = ['Serviços do dia','Assinatura','Saldo anterior','Venda de produto','Outras entradas'];
-const SAIDA_CATS = ['Salário/Comissão','Adiantamento','Fornecedor/Produtos','Aluguel','Energia','Água','Internet','Marketing','Sistema/Assinatura','Manutenção','Outros'];
+const ENTRADA_CATS = ['Serviços do dia','Assinatura','Transferência entre contas','Saldo anterior','Venda de produto','Outras entradas'];
+const SAIDA_CATS = ['Salário/Comissão','Adiantamento','Transferência entre contas','Fornecedor/Produtos','Aluguel','Energia','Água','Internet','Marketing','Sistema/Assinatura','Manutenção','Outros'];
 const PAYABLE_CATS = ['Fornecedor','Salário','Despesa Fixa','Outros'];
 const PAYABLE_TO_SAIDA = {'Fornecedor':'Fornecedor/Produtos','Salário':'Salário/Comissão','Despesa Fixa':'Outros','Outros':'Outros'};
 const FUNCIONARIOS = ['Juan','Marcus','Raiane','Adrielly','João Vitor','Diego','Outro','Diego Natan','Filipe','Ângelo Gabriel','Wallison','Sophia','Everson','Andressa','Camila'];
-const UNIDADES = ['Centro','Jardim São Luís','Ambas'];
+const UNIDADES = ['Centro','Jardim São Luís','Geral','Ambas'];
 
 // Login simples por usuário e senha. Isso NÃO é segurança forte: qualquer pessoa
 // que abrir o código-fonte do site (F12 > Fontes) consegue ler essas senhas.
@@ -511,7 +512,7 @@ async function loadMonth(key){
   return d;
 }
 async function saveMonth(key){
-  return await setData('meses', key, state.monthCache[key]);
+  await setData('meses', key, state.monthCache[key]);
 }
 async function loadPayables(key){
   if(state.payablesCache[key]) return state.payablesCache[key];
@@ -521,13 +522,13 @@ async function loadPayables(key){
   return d;
 }
 async function savePayables(key){
-  return await setData('contas', key, state.payablesCache[key]);
+  await setData('contas', key, state.payablesCache[key]);
 }
 
 function monthTotals(key, unidade){
   const data = state.monthCache[key] || {openingBalance:0, entries:[]};
-  const byUnit = e => !unidade || (e.unidade||'Centro') === unidade;
-  const obKey = unidade==='Jardim São Luís'?'openingBalanceJardim':'openingBalance';
+  const byUnit = e => unidade==='Geral' ? (e.unidade==='Geral') : !unidade || (e.unidade||'Centro') === unidade;
+  const obKey = unidade==='Jardim São Luís'?'openingBalanceJardim':unidade==='Geral'?'openingBalanceGeral':'openingBalance';
   const ob = data[obKey] || 0;
   const entries = [...data.entries].filter(byUnit).sort((a,b)=> a.date.localeCompare(b.date) || 0);
   let running = ob;
@@ -611,8 +612,7 @@ async function updateEntry(oldKey, id, form){
     ...original,
     date: form.date, type: form.type, category: form.category,
     description: form.description || form.category, amount: parseFloat(form.amount),
-    funcionario: form.funcionario || null,
-    unidade: form.unidade || original.unidade || 'Centro'
+    funcionario: form.funcionario || null
   };
   if(newKey === oldKey){
     state.monthCache[oldKey].entries[idx] = updated;
@@ -628,7 +628,7 @@ async function updateEntry(oldKey, id, form){
 }
 async function updateOpeningBalance(key, val, unidade){
   await loadMonth(key);
-  const obKey = unidade==='Jardim São Luís' ? 'openingBalanceJardim' : 'openingBalance';
+  const obKey = unidade==='Jardim São Luís' ? 'openingBalanceJardim' : unidade==='Geral' ? 'openingBalanceGeral' : 'openingBalance';
   state.monthCache[key][obKey] = parseFloat(val)||0;
   await saveMonth(key);
   render();
@@ -708,58 +708,30 @@ async function togglePaid(key, id){
     }
     const entryId = genId();
     if(valorAPagar > 0){
-      // IMPORTANTE: precisa herdar a unidade (e quem lançou) da própria conta.
-      // Sem isso o lançamento cai como "Centro" por padrão mesmo quando a conta
-      // é do Jardim São Luís, e o caixa da unidade errada fica errado.
       state.monthCache[entryKey].entries.push({
         id: entryId, date: paymentDate, type:'saida',
         category: PAYABLE_TO_SAIDA[p.category] || 'Outros',
         description: 'Pagamento: ' + p.description + (valorAPagar !== p.amount ? ' (já descontado adiantamento)' : ''),
         amount: valorAPagar,
-        funcionario: p.funcionario || null,
-        unidade: p.unidade || 'Centro',
-        criadoPor: USERS[state.currentUser] ? USERS[state.currentUser].nome : state.currentUser
+        funcionario: p.funcionario || null
       });
-      const savedMonth = await saveMonth(entryKey);
-      if(!savedMonth){
-        // A gravação falhou (setData já mostrou o alerta de conexão). Desfaz a
-        // alteração local pra não ficar mostrando na tela um lançamento que na
-        // verdade não foi salvo, e não marca a conta como paga.
-        state.monthCache[entryKey].entries = state.monthCache[entryKey].entries.filter(e=>e.id!==entryId);
-        alert('Não foi possível registrar a saída no caixa. A conta continua PENDENTE — tente marcar como paga de novo quando a conexão estiver ok.');
-        render();
-        return;
-      }
+      await saveMonth(entryKey);
     }
     p.status = 'pago';
     p.paidEntryId = valorAPagar > 0 ? entryId : null;
     p.paidEntryMonth = valorAPagar > 0 ? entryKey : null;
   } else {
     const entryKey = p.paidEntryMonth || key;
-    let removedEntry = null, removedIdx = -1;
     if(p.paidEntryId){
       await loadMonth(entryKey);
-      removedIdx = state.monthCache[entryKey].entries.findIndex(e=>e.id===p.paidEntryId);
-      if(removedIdx !== -1) removedEntry = state.monthCache[entryKey].entries[removedIdx];
       state.monthCache[entryKey].entries = state.monthCache[entryKey].entries.filter(e=>e.id!==p.paidEntryId);
-      const savedMonth = await saveMonth(entryKey);
-      if(!savedMonth){
-        // Mesma lógica: se não salvou, devolve o lançamento pro cache local e
-        // não mexe no status da conta, pra não desalinhar caixa x contas a pagar.
-        if(removedEntry) state.monthCache[entryKey].entries.splice(removedIdx, 0, removedEntry);
-        alert('Não foi possível desfazer o lançamento no caixa. Tente novamente quando a conexão estiver ok.');
-        render();
-        return;
-      }
+      await saveMonth(entryKey);
     }
     p.status = 'pendente';
     p.paidEntryId = null;
     p.paidEntryMonth = null;
   }
-  const savedPayable = await savePayables(key);
-  if(!savedPayable){
-    alert('O status da conta não foi salvo. Tente novamente.');
-  }
+  await savePayables(key);
   render();
 }
 
@@ -778,8 +750,10 @@ function render(){
   renderTabs();
   if(state.activeTab==='hoje-centro') el.innerHTML = renderHoje('Centro');
   else if(state.activeTab==='hoje-jardim') el.innerHTML = renderHoje('Jardim São Luís');
+  else if(state.activeTab==='hoje-geral') el.innerHTML = renderHoje('Geral');
   else if(state.activeTab==='mes-centro') { el.innerHTML = renderMes('Centro'); drawChart('Centro'); }
   else if(state.activeTab==='mes-jardim') { el.innerHTML = renderMes('Jardim São Luís'); drawChart('Jardim São Luís'); }
+  else if(state.activeTab==='mes-geral') { el.innerHTML = renderMes('Geral'); drawChart('Geral'); }
   else if(state.activeTab==='contas-centro') el.innerHTML = renderContas('Centro');
   else if(state.activeTab==='contas-jardim') el.innerHTML = renderContas('Jardim São Luís');
   else if(state.activeTab==='extrato') el.innerHTML = renderExtrato();
@@ -790,8 +764,10 @@ function renderTabs(){
   const tabs = [
     ['hoje-centro','Hoje · Centro'],
     ['hoje-jardim','Hoje · Jardim'],
+    ['hoje-geral','Hoje · Geral'],
     ['mes-centro','Mês · Centro'],
     ['mes-jardim','Mês · Jardim'],
+    ['mes-geral','Mês · Geral'],
     ['contas-centro','Contas · Centro'],
     ['contas-jardim','Contas · Jardim'],
     ['extrato','Extrato PDF']
@@ -849,15 +825,15 @@ function renderHoje(unidadeAtiva){
   loadMonth(key);
   const data = state.monthCache[key] || {openingBalance:0, entries:[]};
   // Filtrar por unidade (entries sem unidade = Centro por padrão)
-  const byUnit = e => (e.unidade||'Centro') === unidadeAtiva;
+  const byUnit = e => unidadeAtiva==='Geral' ? (e.unidade==='Geral') : (e.unidade||'Centro') === unidadeAtiva;
   const todays = data.entries.filter(e=>e.date===today && byUnit(e));
   const totE = todays.filter(e=>e.type==='entrada').reduce((s,e)=>s+e.amount,0);
   const totS = todays.filter(e=>e.type==='saida').reduce((s,e)=>s+e.amount,0);
   const ateHoje = data.entries.filter(e=>e.date<=today && byUnit(e));
-  const obKey = unidadeAtiva==='Centro'?'openingBalance':'openingBalanceJardim';
+  const obKey = unidadeAtiva==='Centro'?'openingBalance':unidadeAtiva==='Jardim São Luís'?'openingBalanceJardim':'openingBalanceGeral';
   const ob = data[obKey] || 0;
   const saldoTotal = ob + ateHoje.reduce((s,e)=> s + (e.type==='entrada'?e.amount:-e.amount), 0);
-  const uBadgeClass = unidadeAtiva==='Centro'?'badge-centro':'badge-jardim';
+  const uBadgeClass = unidadeBadgeClass(unidadeAtiva);
   // Pré-selecionar unidade no formulário
   if(state.entryForm.unidade!==unidadeAtiva) state.entryForm.unidade = unidadeAtiva;
 
@@ -908,7 +884,7 @@ function renderMes(unidadeAtiva){
   });
   const catList = Object.entries(entradasPorCat).sort((a,b)=>b[1]-a[1]);
   const uBadgeClass = unidadeAtiva==='Centro'?'badge-centro':'badge-jardim';
-  const obInputId = unidadeAtiva==='Centro'?'opening-balance':'opening-balance-jardim';
+  const obInputId = unidadeAtiva==='Centro'?'opening-balance':unidadeAtiva==='Jardim São Luís'?'opening-balance-jardim':'opening-balance-geral';
   // Pré-selecionar unidade no formulário de lançamento
   if(state.entryForm.unidade!==unidadeAtiva) state.entryForm.unidade = unidadeAtiva;
   return `
@@ -1038,6 +1014,7 @@ function restanteAPagar(p, key){
 function unidadeBadgeClass(u){
   if(!u || u==='Centro') return 'badge-centro';
   if(u==='Jardim São Luís') return 'badge-jardim';
+  if(u==='Geral') return 'badge-geral';
   return 'badge-ambas';
 }
 function unidadeLabel(u){ return u || 'Centro'; }
@@ -1301,6 +1278,8 @@ function attachEvents(){
   if(ob){ ob.onchange = async ()=>{ await updateOpeningBalance(state.currentMonth, ob.value, 'Centro'); }; }
   const obJ = document.getElementById('opening-balance-jardim');
   if(obJ){ obJ.onchange = async ()=>{ await updateOpeningBalance(state.currentMonth, obJ.value, 'Jardim São Luís'); }; }
+  const obG = document.getElementById('opening-balance-geral');
+  if(obG){ obG.onchange = async ()=>{ await updateOpeningBalance(state.currentMonth, obG.value, 'Geral'); }; }
 
   ['ef-desc','ef-amount','pf-desc','pf-amount'].forEach(id=>{
     const elm = document.getElementById(id);
