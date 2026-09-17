@@ -699,7 +699,9 @@ async function togglePaid(key, id){
   const list = state.payablesCache[key];
   const p = list.find(x=>x.id===id);
   if(p.status === 'pendente'){
-    const paymentDate = todayISO();
+    // Usa a data de vencimento da conta como data do lançamento de caixa (não a data de hoje),
+    // pra bater com o dia real do pagamento em vez do dia em que foi marcada como paga.
+    const paymentDate = p.dueDate || todayISO();
     const entryKey = monthKeyOf(paymentDate);
     await loadMonth(entryKey);
     const valorAPagar = restanteAPagar(p, key);
@@ -713,7 +715,8 @@ async function togglePaid(key, id){
         category: PAYABLE_TO_SAIDA[p.category] || 'Outros',
         description: 'Pagamento: ' + p.description + (valorAPagar !== p.amount ? ' (já descontado adiantamento)' : ''),
         amount: valorAPagar,
-        funcionario: p.funcionario || null
+        funcionario: p.funcionario || null,
+        unidade: p.unidade || 'Centro'
       });
       await saveMonth(entryKey);
     }
