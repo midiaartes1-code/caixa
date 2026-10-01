@@ -1188,6 +1188,9 @@ function attachEvents(){
       const unidadeEl = document.getElementById('ef-unidade');
       const unidade = unidadeEl ? unidadeEl.value : state.entryForm.unidade || 'Centro';
       if(!date || !amount || parseFloat(amount)<=0){ alert('Preencha data e um valor válido.'); return; }
+      if(state.savingEntry) return;
+      state.savingEntry = true; b.disabled = true; b.style.opacity = '0.5';
+      try {
       if(state.editingEntry){
         await updateEntry(state.editingEntry.key, state.editingEntry.id, { type: state.entryForm.type, date, category, description, amount, funcionario, unidade });
         state.editingEntry = null;
@@ -1195,6 +1198,8 @@ function attachEvents(){
         await addEntry({ type: state.entryForm.type, date, category, description, amount, funcionario, unidade });
       }
       state.entryForm.description = ''; state.entryForm.amount = ''; state.entryForm.funcionario = '';
+      } finally { state.savingEntry = false; }
+      render();
     }
     else if(act==='edit-entry'){
       const key = b.dataset.key, id = b.dataset.id;
@@ -1223,6 +1228,9 @@ function attachEvents(){
       const unidadeEl = document.getElementById('pf-unidade');
       const unidade = unidadeEl ? unidadeEl.value : 'Centro';
       if(!dueDate || !amount || parseFloat(amount)<=0){ alert('Preencha vencimento e um valor válido.'); return; }
+      if(state.savingPayable) return;
+      state.savingPayable = true; b.disabled = true; b.style.opacity = '0.5';
+      try {
       if(state.editingPayable){
         await updatePayable(state.editingPayable.key, state.editingPayable.id, { dueDate, category, description, amount, funcionario, unidade });
         state.editingPayable = null;
@@ -1230,6 +1238,8 @@ function attachEvents(){
         await addPayable({ dueDate, category, description, amount, funcionario, unidade });
       }
       state.payableForm.description=''; state.payableForm.amount=''; state.payableForm.funcionario='';
+      } finally { state.savingPayable = false; }
+      render();
     }
     else if(act==='edit-payable'){
       const key = b.dataset.key, id = b.dataset.id;
