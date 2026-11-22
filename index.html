@@ -523,6 +523,118 @@ tr:hover td{background:rgba(255,255,255,.016);}
   .statement{border:none; padding:0;}
 }
 
+/* ═══════════════════════════════════════
+   FASE 3 — LAYOUT DESKTOP + REFINAMENTOS
+   ═══════════════════════════════════════ */
+
+/* ── SIDEBAR DESKTOP ─────────────────── */
+@media(min-width:800px){
+
+  /* Background: cor da sidebar à esq, fundo principal à dir */
+  body{
+    display:grid;
+    grid-template-columns:220px 1fr;
+    grid-template-rows:auto auto 1fr auto;
+    min-height:100vh;
+    background:linear-gradient(90deg,var(--s1) 220px,var(--bg) 220px);
+    padding-bottom:0;
+  }
+
+  /* Linha divisória da sidebar */
+  body::after{
+    content:'';
+    position:fixed;
+    left:220px; top:0; bottom:0;
+    width:1px;
+    background:var(--border);
+    z-index:300;
+    pointer-events:none;
+  }
+
+  /* Header → col 1, linha 1 */
+  .app-header{
+    grid-column:1;
+    grid-row:1;
+    position:static;
+    border-bottom:1px solid var(--border);
+    border-right:none;
+    padding:24px 16px 20px;
+    text-align:left;
+  }
+  .app-header::after{display:none;}
+  .app-header .logo-icon{margin:0 0 10px; height:44px;}
+
+  /* Unit pills → col 1, linha 2 */
+  .unit-pills{
+    grid-column:1;
+    grid-row:2;
+    position:static;
+    flex-direction:column;
+    padding:12px;
+    border-bottom:none;
+    border-right:none;
+    gap:4px;
+    background:var(--s1);
+    z-index:1;
+  }
+  .unit-pill{
+    max-width:none;
+    border-radius:10px;
+    text-align:left;
+    justify-content:flex-start;
+    padding:10px 14px;
+  }
+
+  /* Conteúdo → col 2, todas as linhas */
+  #content{
+    grid-column:2;
+    grid-row:1 / span 4;
+    max-width:none;
+    margin:0;
+    padding:28px 32px;
+  }
+
+  /* Bottom nav → col 1, linha 4 */
+  .bottom-nav{
+    grid-column:1;
+    grid-row:4;
+    position:static;
+    right:auto;
+    width:auto;
+    flex-direction:column;
+    border-top:1px solid var(--border);
+    border-right:none;
+    padding-bottom:0;
+    background:var(--s1);
+    align-self:end;
+  }
+  .bnav-btn{
+    flex-direction:row;
+    justify-content:flex-start;
+    padding:14px 20px;
+    gap:12px;
+    flex:0;
+  }
+  .bnav-btn .bnav-icon{font-size:18px;}
+  .bnav-btn .bnav-label{
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+  }
+}
+
+/* ── TABLE HOVER ─────────────────────── */
+table tbody tr{transition:background .12s;}
+table tbody tr:hover td,
+table tbody tr:hover th{background:rgba(255,255,255,.025);}
+
+/* ── SCROLLBAR ───────────────────────── */
+*{scrollbar-width:thin; scrollbar-color:var(--b2) transparent;}
+::-webkit-scrollbar{width:5px; height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--b2); border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--fg3);}
+
 </style>
 </head>
 <body>
@@ -717,7 +829,7 @@ function renderLogin(errorMsg){
       <h3 style="text-align:center; margin-bottom:16px;">Entrar</h3>
       ${errorMsg ? `<p style="color:var(--saida); font-size:12.5px; text-align:center;">${errorMsg}</p>` : ''}
       <label>Usuário</label>
-      <input type="text" id="login-user" autocomplete="username" placeholder="diego, bianca ou johann">
+      <input type="text" id="login-user" autocomplete="username" placeholder="bianca ou johann">
       <label>Senha</label>
       <input type="password" id="login-pass" autocomplete="current-password">
       <button class="btn btn-primary" data-act="do-login" style="width:100%; margin-top:6px;">Entrar</button>
