@@ -502,7 +502,7 @@ const ENTRADA_CATS = ['Serviços do dia','Assinatura','Transferência entre cont
 const SAIDA_CATS = ['Salário/Comissão','Adiantamento','Transferência entre contas','Fornecedor/Produtos','Aluguel','Energia','Água','Internet','Marketing','Sistema/Assinatura','Manutenção','Outros'];
 const PAYABLE_CATS = ['Fornecedor','Salário','Despesa Fixa','Outros'];
 const PAYABLE_TO_SAIDA = {'Fornecedor':'Fornecedor/Produtos','Salário':'Salário/Comissão','Despesa Fixa':'Outros','Outros':'Outros'};
-const FUNCIONARIOS = ['Juan','Marcus','Raiane','Adrielly','João Vitor','Diego','Outro','Diego Natan','Filipe','Ângelo Gabriel','Wallison','Sophia','Everson','Andressa','Camila'];
+const FUNCIONARIOS = ['Juan','Marcus','Raiane','Adrielly','João Vitor','Diego','Ângelo Gabriel','Outro','Diego Natan','Filipe','Wallison','Sophia','Everson','Andressa','Camila','Makaule','Artêmio'];
 const UNIDADES = ['Centro','Jardim São Luís','Geral','Ambas'];
 
 // Login simples por usuário e senha. Isso NÃO é segurança forte: qualquer pessoa
@@ -1158,8 +1158,8 @@ function renderContas(unidadeAtiva){
 
   // Adiantamentos só dos funcionários desta unidade
   const funcUnidade = unidadeAtiva==='Centro'
-    ? ['Juan','Marcus','Raiane','Adrielly','João Vitor','Diego']
-    : ['Diego Natan','Filipe','Ângelo Gabriel','Wallison','Sophia','Everson','Andressa','Camila'];
+    ? ['Juan','Marcus','Raiane','Adrielly','João Vitor','Diego','Ângelo Gabriel']
+    : ['Diego Natan','Filipe','Wallison','Sophia','Everson','Andressa','Camila','Makaule','Artêmio'];
   const adiantamentosPorFunc = funcUnidade
     .map(n=>({nome:n, valor: sumAdiantamentos(key, n)}))
     .filter(x=>x.valor>0);
