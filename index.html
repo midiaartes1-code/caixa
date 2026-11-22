@@ -635,6 +635,12 @@ table tbody tr:hover th{background:rgba(255,255,255,.025);}
 ::-webkit-scrollbar-thumb{background:var(--b2); border-radius:3px;}
 ::-webkit-scrollbar-thumb:hover{background:var(--fg3);}
 
+/* ── SIDEBAR FIXA NO DESKTOP (só em tela, não afeta impressão) ── */
+@media screen and (min-width:800px){
+  body{height:100vh; overflow:hidden;}
+  #content{overflow-y:auto; min-height:0;}
+}
+
 </style>
 </head>
 <body>
@@ -649,6 +655,7 @@ table tbody tr:hover th{background:rgba(255,255,255,.025);}
 <div class="unit-pills no-print" id="unit-pills"></div>
 
 <div id="content">Carregando...</div>
+<nav class="bottom-nav no-print" id="bottom-nav"></nav>
 
 <script>
 /* ---------- storage helpers (Firestore) ---------- */
@@ -1617,6 +1624,5 @@ async function boot(){
 }
 boot();
 </script>
-<nav class="bottom-nav no-print" id="bottom-nav"></nav>
 </body>
 </html>
