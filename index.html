@@ -102,44 +102,84 @@ body{
   opacity:.6;
 }
 
-/* ── TABS ────────────────────────────────── */
-.tabs{
+/* ── UNIT PILLS ──────────────────────────── */
+.unit-pills{
   display:flex;
+  justify-content:center;
+  gap:8px;
+  padding:10px 16px;
   background:var(--s1);
   border-bottom:1px solid var(--border);
-  overflow-x:auto;
-  scrollbar-width:none;
   position:sticky;
   top:0;
   z-index:50;
 }
-.tabs::-webkit-scrollbar{display:none;}
-.tab-btn{
-  flex:0 0 auto;
-  padding:11px 14px;
+.unit-pill{
+  flex:1;
+  max-width:120px;
+  padding:9px 10px;
+  border-radius:24px;
+  border:1px solid var(--border);
+  background:none;
+  color:var(--fg3);
+  font-family:var(--fh);
+  font-size:11.5px;
+  font-weight:600;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  cursor:pointer;
+  transition:all .15s;
+  white-space:nowrap;
+  text-align:center;
+}
+.unit-pill:hover{color:var(--fg2); border-color:var(--b2);}
+.unit-pill.active{
+  background:var(--ac-dim);
+  border-color:var(--accent);
+  color:var(--accent);
+}
+
+/* ── BOTTOM NAV ──────────────────────────── */
+.bottom-nav{
+  position:fixed;
+  bottom:0; left:0; right:0;
+  display:flex;
+  background:var(--s1);
+  border-top:1px solid var(--border);
+  z-index:100;
+  padding-bottom:env(safe-area-inset-bottom, 0px);
+}
+.bnav-btn{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  padding:10px 4px;
   background:none;
   border:none;
   color:var(--fg3);
   font-family:var(--fh);
-  font-size:11px;
-  font-weight:500;
-  letter-spacing:.05em;
+  font-size:9px;
+  font-weight:600;
+  letter-spacing:.06em;
   text-transform:uppercase;
   cursor:pointer;
-  border-bottom:2px solid transparent;
-  transition:color .15s, border-color .15s, background .15s;
-  white-space:nowrap;
+  transition:color .15s, background .15s;
 }
-.tab-btn:hover{color:var(--fg2); background:rgba(255,255,255,.03);}
-.tab-btn.active{
-  color:var(--accent);
-  border-bottom-color:var(--accent);
-  background:var(--ac-dim);
-  font-weight:600;
+.bnav-btn:hover{color:var(--fg2); background:rgba(255,255,255,.03);}
+.bnav-btn.active{color:var(--accent);}
+.bnav-btn .bnav-icon{
+  font-size:20px;
+  line-height:1;
+  transition:transform .15s;
 }
+.bnav-btn.active .bnav-icon{transform:scale(1.12);}
+.bnav-btn .bnav-label{line-height:1;}
 
 /* ── CONTENT ─────────────────────────────── */
-#content{padding:16px; max-width:860px; margin:0 auto 80px;}
+#content{padding:16px; max-width:860px; margin:0 auto 76px;}
 
 /* ── CARDS ───────────────────────────────── */
 .card{
@@ -494,7 +534,7 @@ tr:hover td{background:rgba(255,255,255,.016);}
 </div>
 <div class="stripe no-print"></div>
 
-<div class="tabs no-print" id="tabs"></div>
+<div class="unit-pills no-print" id="unit-pills"></div>
 
 <div id="content">Carregando...</div>
 
@@ -594,7 +634,8 @@ function shiftMonth(key, delta){
 
 /* ---------- state ---------- */
 let state = {
-  activeTab: 'hoje-centro',
+  activeSection: 'hoje',
+  activeUnidade: 'Centro',
   currentMonth: monthKeyOf(todayISO()),
   monthCache: {},
   payablesCache: {},
@@ -844,44 +885,62 @@ async function togglePaid(key, id){
 
 /* ---------- render ---------- */
 function render(){
-  const tabsEl = document.getElementById('tabs');
   const el = document.getElementById('content');
 
   if(!state.currentUser){
-    tabsEl.innerHTML = '';
+    const pillsEl = document.getElementById('unit-pills');
+    const navEl = document.getElementById('bottom-nav');
+    if(pillsEl) pillsEl.innerHTML = '';
+    if(navEl) navEl.innerHTML = '';
     el.innerHTML = renderLogin(state.loginError);
     attachEvents();
     return;
   }
 
-  renderTabs();
-  if(state.activeTab==='hoje-centro') el.innerHTML = renderHoje('Centro');
-  else if(state.activeTab==='hoje-jardim') el.innerHTML = renderHoje('Jardim São Luís');
-  else if(state.activeTab==='hoje-geral') el.innerHTML = renderHoje('Geral');
-  else if(state.activeTab==='mes-centro') { el.innerHTML = renderMes('Centro'); drawChart('Centro'); }
-  else if(state.activeTab==='mes-jardim') { el.innerHTML = renderMes('Jardim São Luís'); drawChart('Jardim São Luís'); }
-  else if(state.activeTab==='mes-geral') { el.innerHTML = renderMes('Geral'); drawChart('Geral'); }
-  else if(state.activeTab==='contas-centro') el.innerHTML = renderContas('Centro');
-  else if(state.activeTab==='contas-jardim') el.innerHTML = renderContas('Jardim São Luís');
-  else if(state.activeTab==='extrato') el.innerHTML = renderExtrato();
+  renderNav();
+  const sec = state.activeSection;
+  const uMap = { Centro:'Centro', Jardim:'Jardim São Luís', Geral:'Geral' };
+  const u = uMap[state.activeUnidade] || 'Centro';
+  if(sec==='hoje') el.innerHTML = renderHoje(u);
+  else if(sec==='mes') { el.innerHTML = renderMes(u); drawChart(u); }
+  else if(sec==='contas') el.innerHTML = renderContas(u);
+  else if(sec==='extrato') el.innerHTML = renderExtrato();
   attachEvents();
 }
 
-function renderTabs(){
-  const tabs = [
-    ['hoje-centro','Hoje · Centro'],
-    ['hoje-jardim','Hoje · Jardim'],
-    ['hoje-geral','Hoje · Geral'],
-    ['mes-centro','Mês · Centro'],
-    ['mes-jardim','Mês · Jardim'],
-    ['mes-geral','Mês · Geral'],
-    ['contas-centro','Contas · Centro'],
-    ['contas-jardim','Contas · Jardim'],
-    ['extrato','Extrato PDF']
+function renderNav(){
+  // Unit pills (hidden on extrato)
+  const hideUnits = state.activeSection === 'extrato';
+  const pills = [
+    ['Centro','Centro'],
+    ['Jardim','Jardim'],
+    ['Geral','Geral']
   ];
-  document.getElementById('tabs').innerHTML = tabs.map(([k,l])=>
-    `<button class="tab-btn ${state.activeTab===k?'active':''}" data-tab="${k}">${l}</button>`
-  ).join('') + `<button class="tab-btn" data-act="logout" style="flex:0 0 auto; color:var(--muted);" title="Sair">${USERS[state.currentUser].nome} · Sair</button>`;
+  document.getElementById('unit-pills').innerHTML = hideUnits
+    ? ''
+    : pills.map(([k,l])=>
+        `<button class="unit-pill ${state.activeUnidade===k?'active':''}" data-unit="${k}">${l}</button>`
+      ).join('');
+  document.getElementById('unit-pills').style.display = hideUnits ? 'none' : 'flex';
+
+  // Bottom nav
+  const sections = [
+    ['hoje','📋','Hoje'],
+    ['mes','📊','Mês'],
+    ['contas','💳','Contas'],
+    ['extrato','📄','Extrato']
+  ];
+  document.getElementById('bottom-nav').innerHTML =
+    sections.map(([k,icon,label])=>
+      `<button class="bnav-btn ${state.activeSection===k?'active':''}" data-section="${k}">
+        <span class="bnav-icon">${icon}</span>
+        <span class="bnav-label">${label}</span>
+      </button>`
+    ).join('') +
+    `<button class="bnav-btn" data-act="logout">
+      <span class="bnav-icon">👤</span>
+      <span class="bnav-label">${USERS[state.currentUser].nome.split(' ')[0]}</span>
+    </button>`;
 }
 
 function entryFormHTML(prefix){
@@ -1250,12 +1309,19 @@ function renderExtrato(){
 
 /* ---------- events ---------- */
 function attachEvents(){
-  document.getElementById('tabs').onclick = (e)=>{
+  document.getElementById('unit-pills').onclick = (e)=>{
+    const b = e.target.closest('[data-unit]');
+    if(!b) return;
+    state.activeUnidade = b.dataset.unit;
+    render();
+  };
+
+  document.getElementById('bottom-nav').onclick = (e)=>{
     const logoutBtn = e.target.closest('[data-act="logout"]');
     if(logoutBtn){ doLogout(); return; }
-    const b = e.target.closest('[data-tab]');
+    const b = e.target.closest('[data-section]');
     if(!b) return;
-    state.activeTab = b.dataset.tab;
+    state.activeSection = b.dataset.section;
     render();
   };
 
@@ -1440,5 +1506,6 @@ async function boot(){
 }
 boot();
 </script>
+<nav class="bottom-nav no-print" id="bottom-nav"></nav>
 </body>
 </html>
