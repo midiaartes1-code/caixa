@@ -196,6 +196,14 @@ button.badge{height:30px; padding:0 12px; transition:filter .15s;}
 button.badge:hover{filter:brightness(1.2);}
 .val-entrada{color:var(--in); font-weight:600;}
 .val-saida{color:var(--out); font-weight:600;}
+.tbl input[type=number]{display:inline-block; width:128px; height:36px; text-align:right;}
+.t-equipe .c-pagar{font-weight:700;}
+.t-equipe .c-pagar.neg{color:var(--out);}
+.card > .ch .btn.x{margin-left:auto;}
+.check{display:flex !important; align-items:center; gap:10px; margin:0 !important; color:var(--fg) !important; font-size:14px !important;}
+.check input{width:18px; height:18px; accent-color:var(--lime); flex:none;}
+.line-item .btn{flex:none;}
+button:disabled,input:disabled{opacity:.5; cursor:not-allowed;}
 .strike{display:block; text-decoration:line-through; color:var(--fg3); font-size:12px;}
 .amber{color:var(--amber); font-weight:600;}
 .row-acts{display:flex; gap:6px; justify-content:flex-end;}
@@ -263,6 +271,8 @@ body.is-login .side,body.is-login .seg,body.is-login .profile{display:none !impo
   .work{grid-template-columns:minmax(0,1fr);}
   .work > .stack{order:-1;}
   .tbl .c-cat,.tbl .h-cat{display:none;}
+  .t-equipe .c-prev,.t-equipe .h-prev{display:none;}
+  .tbl input[type=number]{width:110px;}
   .sub2.cat-inline{display:block;}
 }
 @media (min-width:700px) and (max-width:1199px){
@@ -353,6 +363,14 @@ body.is-login .side,body.is-login .seg,body.is-login .profile{display:none !impo
   .tbl .c-act{grid-column:2; grid-row:3;}
   .tbl.t-hoje .c-act{grid-row:2;}
   .tbl.t-contas .c-date{grid-row:2;}
+  .tbl.t-equipe .c-pagar{grid-column:2; grid-row:1; text-align:right; white-space:nowrap;}
+  .tbl.t-equipe .c-pagar::before{content:"A pagar "; font-weight:400; font-size:12px; color:var(--fg3);}
+  .tbl.t-equipe .c-in{grid-column:1; grid-row:2; text-align:left;}
+  .tbl.t-equipe .c-in input{width:100%; max-width:200px; text-align:left;}
+  .tbl.t-equipe .c-val{grid-column:2; grid-row:2; font-size:12px; font-weight:500;}
+  .tbl.t-equipe .c-val::before{content:"Adiant. "; color:var(--fg3); font-weight:400;}
+  .tbl.t-equipe .c-prev{display:none;}
+  .tbl.t-equipe .c-act{grid-column:1 / -1; grid-row:3;}
   .tbl.t-contas .c-date::before{content:"Vence ";}
   .tbl .c-type,.tbl .c-unit,.sub2.cat-inline{display:none;}
   .tbl .c-cat{display:block;}
@@ -502,7 +520,7 @@ const ENTRADA_CATS = ['Serviços do dia','Assinatura','Transferência entre cont
 const SAIDA_CATS = ['Salário/Comissão','Adiantamento','Transferência entre contas','Fornecedor/Produtos','Aluguel','Energia','Água','Internet','Marketing','Sistema/Assinatura','Manutenção','Outros'];
 const PAYABLE_CATS = ['Fornecedor','Salário','Despesa Fixa','Outros'];
 const PAYABLE_TO_SAIDA = {'Fornecedor':'Fornecedor/Produtos','Salário':'Salário/Comissão','Despesa Fixa':'Outros','Outros':'Outros'};
-const FUNCIONARIOS = ['Juan','Marcus','Raiane','Adrielly','João Vitor','Diego','Ângelo Gabriel','Outro','Diego Natan','Filipe','Wallison','Sophia','Everson','Andressa','Camila','Makaule','Artêmio'];
+const FUNCIONARIOS = ['Marcus','Juan','Ângelo Gabriel','João Vitor','Nayara','Adrielly','Raiane','Outro','Wallison','Artêmio','Everson','Melks','Makaule','Camila','Sophia'];
 const UNIDADES = ['Centro','Jardim São Luís','Geral','Ambas'];
 
 // Login simples por usuário e senha. Isso NÃO é segurança forte: qualquer pessoa
@@ -821,6 +839,7 @@ function render(){
     return;
   }
 
+  loadEquipe();
   renderNav();
   const sec = state.activeSection;
   const uMap = { Centro:'Centro', Jardim:'Jardim São Luís', Geral:'Geral' };
@@ -829,6 +848,7 @@ function render(){
   else if(sec==='mes') { el.innerHTML = renderMes(u); drawChart(u); }
   else if(sec==='contas') el.innerHTML = renderContas(u);
   else if(sec==='extrato') el.innerHTML = renderExtrato();
+  else if(sec==='equipe') el.innerHTML = renderEquipe(u);
   attachEvents();
 }
 
@@ -852,7 +872,8 @@ function renderNav(){
     ['hoje','calendar-check','Hoje','Hoje'],
     ['mes','chart-column','Mês','Mês'],
     ['contas','receipt-text','Contas a pagar','Contas'],
-    ['extrato','file-text','Extrato','Extrato']
+    ['extrato','file-text','Extrato','Extrato'],
+    ['equipe','users','Equipe','Equipe']
   ];
   document.getElementById('bottom-nav').innerHTML =
     `<div class="cap">Menu</div>` +
@@ -911,7 +932,7 @@ function entryFormHTML(inDrawer){
       <div><label for="ef-func">Funcionário</label>
         <select id="ef-func">
           <option value="">Selecione...</option>
-          ${FUNCIONARIOS.map(n=>`<option ${n===f.funcionario?'selected':''}>${n}</option>`).join('')}
+          ${nomesFuncionarios(f.funcionario).map(n=>`<option ${n===f.funcionario?'selected':''}>${n}</option>`).join('')}
         </select>
         ${f.funcionario && f.category==='Adiantamento' ? `<p class="note">Adiantado a ${f.funcionario} este mês (antes deste lançamento): ${fmtMoney(jaAdiantado)}</p>` : ''}
         ${f.funcionario && f.category==='Salário/Comissão' ? `<p class="note">${f.funcionario} já recebeu ${fmtMoney(jaAdiantado)} em adiantamento este mês. Desconta isso do valor do salário antes de lançar.</p>` : ''}
@@ -1115,7 +1136,7 @@ function payableFormHTML(){
       <div><label for="pf-func">Funcionário</label>
         <select id="pf-func">
           <option value="">Selecione...</option>
-          ${FUNCIONARIOS.map(n=>`<option ${n===f.funcionario?'selected':''}>${n}</option>`).join('')}
+          ${nomesFuncionarios(f.funcionario).map(n=>`<option ${n===f.funcionario?'selected':''}>${n}</option>`).join('')}
         </select>
         ${f.funcionario ? `<p class="note">${f.funcionario} já recebeu ${fmtMoney(jaAdiantado)} em adiantamento neste mês. Lance aqui só o valor que ainda falta pagar.</p>` : ''}
       </div>` : ''}
@@ -1157,9 +1178,7 @@ function renderContas(unidadeAtiva){
   const totalPago = list.filter(p=>p.status==='pago').reduce((s,p)=>s+p.amount,0);
 
   // Adiantamentos só dos funcionários desta unidade
-  const funcUnidade = unidadeAtiva==='Centro'
-    ? ['Juan','Marcus','Raiane','Adrielly','João Vitor','Diego','Ângelo Gabriel']
-    : ['Diego Natan','Filipe','Wallison','Sophia','Everson','Andressa','Camila','Makaule','Artêmio'];
+  const funcUnidade = equipeAtual().pessoas.filter(p => unidadeAtiva==='Geral' || p.unidade===unidadeAtiva).map(p=>p.nome);
   const adiantamentosPorFunc = funcUnidade
     .map(n=>({nome:n, valor: sumAdiantamentos(key, n)}))
     .filter(x=>x.valor>0);
@@ -1269,8 +1288,9 @@ function renderExtrato(){
 
 /* ---------- interações só de interface (não leem nem gravam dados) ---------- */
 function closeEntryPanel(){
-  state.uiEntryPanel = false;
-  if(state.editingEntry){
+  const eraAdiant = state.uiAdiant;
+  state.uiEntryPanel = false; state.uiAdiant = false;
+  if(state.editingEntry || eraAdiant){
     state.editingEntry = null;
     state.entryForm = { type:'entrada', date: todayISO(), category: ENTRADA_CATS[0], description:'', amount:'', funcionario:'', unidade: state.entryForm.unidade || 'Centro' };
   }
@@ -1279,7 +1299,7 @@ function closeEntryPanel(){
 document.addEventListener('click', (e)=>{
   const menu = document.getElementById('profile-menu');
   const t = e.target.closest('[data-ui]');
-  if(e.target.closest('[data-section]')) state.uiEntryPanel = false;
+  if(e.target.closest('[data-section]')){ state.uiEntryPanel = false; state.uiEqForm = null; state.uiAdiant = false; }
   if(!t){
     if(menu && !menu.hidden && !e.target.closest('#profile')) menu.hidden = true;
     return;
@@ -1307,7 +1327,265 @@ document.addEventListener('keydown', (e)=>{
   if(e.key!=='Escape') return;
   const menu = document.getElementById('profile-menu');
   if(menu && !menu.hidden){ menu.hidden = true; return; }
+  if(state.uiEqForm){ state.uiEqForm = null; render(); return; }
   if(document.querySelector('.drawer')) closeEntryPanel();
+});
+
+/* ---------- equipe: cadastro, previsão do mês e adiantamentos ---------- */
+/* Cadastro inicial montado a partir da planilha "Equipe e salários - Novembro" (22/11/2026).
+   Depois da primeira alteração ele passa a viver no Firebase, em config/equipe.
+   "nome" é o nome curto usado nos lançamentos do caixa; não muda depois de criado. */
+const EQUIPE_PADRAO = [
+  { id:'marcus',   nome:'Marcus',         nomeCompleto:'Marcus Vinicius Pereira Silva',              unidade:'Centro',          funcao:'Barbeiro líder · Elite 40%',            tipo:'comissao', valor:0,    ativo:true },
+  { id:'juan',     nome:'Juan',           nomeCompleto:'Juan Gonçalves da Silva',                    unidade:'Centro',          funcao:'Barbeiro · Elite 40%',                  tipo:'comissao', valor:0,    ativo:true },
+  { id:'angelo',   nome:'Ângelo Gabriel', nomeCompleto:'Ângelo Gabriel Maravalha de Sousa',          unidade:'Centro',          funcao:'Barbeiro · Elite 40%',                  tipo:'comissao', valor:0,    ativo:true },
+  { id:'joaovitor',nome:'João Vitor',     nomeCompleto:'João Victor Duarte',                         unidade:'Centro',          funcao:'Barbeiro · Elite 40%',                  tipo:'comissao', valor:0,    ativo:true },
+  { id:'nayara',   nome:'Nayara',         nomeCompleto:'Nayara Silva Rêgo',                          unidade:'Centro',          funcao:'Manicure e pedicure · 56%',             tipo:'comissao', valor:0,    ativo:true },
+  { id:'adrielly', nome:'Adrielly',       nomeCompleto:'Adrielly',                                   unidade:'Centro',          funcao:'Recepção',                              tipo:'fixo',     valor:1621, ativo:true },
+  { id:'raiane',   nome:'Raiane',         nomeCompleto:'Rayane Fernandes Silva',                     unidade:'Centro',          funcao:'Recepção',                              tipo:'fixo',     valor:1753, ativo:true },
+  { id:'wallison', nome:'Wallison',       nomeCompleto:'Antonio Wallison Alves dos Santos',          unidade:'Jardim São Luís', funcao:'Barbeiro · Elite 40%',                  tipo:'comissao', valor:0,    ativo:true },
+  { id:'artemio',  nome:'Artêmio',        nomeCompleto:'Artemio Azevedo Conceição',                  unidade:'Jardim São Luís', funcao:'Barbeiro · garantia até dezembro',      tipo:'garantia', valor:3000, ativo:true },
+  { id:'everson',  nome:'Everson',        nomeCompleto:'Everson Wesley Braga de Araújo',             unidade:'Jardim São Luís', funcao:'Barbeiro · Elite 40%',                  tipo:'comissao', valor:0,    ativo:true },
+  { id:'melks',    nome:'Melks',          nomeCompleto:'Melks Gleick da Silva Belo',                 unidade:'Jardim São Luís', funcao:'Barbeiro · garantia (entrou 03/11)',    tipo:'garantia', valor:3000, ativo:true },
+  { id:'makaule',  nome:'Makaule',        nomeCompleto:'Matheus de Sousa Trajano Pereira (Makaule)', unidade:'Jardim São Luís', funcao:'Barbeiro · garantia (entrou 06/11)',    tipo:'garantia', valor:3000, ativo:true },
+  { id:'camila',   nome:'Camila',         nomeCompleto:'Camila Leal de Morais',                      unidade:'Jardim São Luís', funcao:'Recepção',                              tipo:'fixo',     valor:1621, ativo:true },
+  { id:'sophia',   nome:'Sophia',         nomeCompleto:'Sophia Gonçalves Leão',                      unidade:'Jardim São Luís', funcao:'Recepção',                              tipo:'fixo',     valor:1621, ativo:true }
+];
+const EQ_TIPOS = { comissao:'Comissão', garantia:'Garantia', fixo:'Fixo' };
+
+function equipeAtual(){
+  return state.equipe || { pessoas: EQUIPE_PADRAO, previstos: {} };
+}
+/* Nomes para os campos "Funcionário". Se o lançamento em edição tem um nome que saiu da equipe, ele continua na lista para não ser apagado. */
+function nomesFuncionarios(atual){
+  const nomes = equipeAtual().pessoas.filter(p=>p.ativo!==false).map(p=>p.nome);
+  if(!nomes.includes('Outro')) nomes.push('Outro');
+  if(atual && !nomes.includes(atual)) nomes.push(atual);
+  return nomes;
+}
+async function loadEquipe(){
+  if(state.equipeCarregada || state.equipeCarregando) return;
+  state.equipeCarregando = true;
+  let d = null, ok = false;
+  try{
+    const { doc, getDoc } = window._fs;
+    const snap = await getDoc(doc(db, 'config', 'equipe'));
+    d = snap.exists() ? snap.data().payload : null;
+    ok = true;
+  }catch(e){ console.error('equipe: erro ao carregar', e); }
+  const valido = d && Array.isArray(d.pessoas);
+  state.equipe = valido ? d : { pessoas: JSON.parse(JSON.stringify(EQUIPE_PADRAO)), previstos: {} };
+  if(!state.equipe.previstos) state.equipe.previstos = {};
+  state.equipeSalva = !!valido;
+  state.equipeErro = !ok;
+  state.equipeCarregada = true;
+  state.equipeCarregando = false;
+  render();
+}
+async function saveEquipe(){
+  if(!state.equipeCarregada || state.equipeErro){
+    alert('O cadastro da equipe não foi carregado. Recarregue a página e tente de novo.');
+    return false;
+  }
+  const ok = await setData('config', 'equipe', state.equipe);
+  if(ok) state.equipeSalva = true;
+  return ok;
+}
+function eqDigitado(p, key){
+  const m = (equipeAtual().previstos || {})[key] || {};
+  const v = m[p.id];
+  return (typeof v === 'number' && !isNaN(v)) ? v : null;
+}
+/* Previsto do mês: fixo usa o salário do cadastro (ou o valor digitado no mês); garantia usa o maior entre a garantia e a comissão digitada; comissão usa o valor digitado. */
+function eqPrevisto(p, key){
+  const dig = eqDigitado(p, key);
+  if(p.tipo==='fixo') return dig!==null ? dig : (p.valor || 0);
+  if(p.tipo==='garantia') return Math.max(p.valor || 0, dig || 0);
+  return dig || 0;
+}
+
+function equipeFormHTML(){
+  const f = state.uiEqForm;
+  const novo = !f.id;
+  return `
+  <section class="card">
+    <div class="ch">${ic(novo ? 'plus' : 'pencil')}<h3>${novo ? 'Nova pessoa' : 'Editar cadastro'}</h3><button class="ibtn x" data-ui="eq-cancel" title="Fechar" aria-label="Fechar">${ic('x')}</button></div>
+    <div class="cb form">
+      <div><label for="eq-nome">Nome no caixa (curto)</label>
+        <input type="text" id="eq-nome" data-eqf="nome" value="${f.nome}" placeholder="Ex: Marcus" ${novo ? '' : 'disabled'}>
+        ${novo ? '' : '<p class="hint">Este nome liga a pessoa aos lançamentos já feitos, por isso não muda.</p>'}</div>
+      <div><label for="eq-completo">Nome completo</label>
+        <input type="text" id="eq-completo" data-eqf="nomeCompleto" value="${f.nomeCompleto}"></div>
+      <div class="g2">
+        <div><label for="eq-unidade">Unidade</label>
+          <select id="eq-unidade" data-eqf="unidade">${['Centro','Jardim São Luís'].map(u=>`<option ${u===f.unidade?'selected':''}>${u}</option>`).join('')}</select></div>
+        <div><label for="eq-tipo">Pagamento</label>
+          <select id="eq-tipo" data-eqf="tipo">${Object.keys(EQ_TIPOS).map(t=>`<option value="${t}" ${t===f.tipo?'selected':''}>${t==='fixo'?'Salário fixo':t==='garantia'?'Garantia mínima':'Comissão'}</option>`).join('')}</select></div>
+      </div>
+      <div><label for="eq-funcao">Função</label>
+        <input type="text" id="eq-funcao" data-eqf="funcao" value="${f.funcao}" placeholder="Ex: Barbeiro · Elite 40%"></div>
+      <div><label for="eq-valor">Salário fixo ou garantia (R$)</label>
+        <input type="number" id="eq-valor" data-eqf="valor" step="0.01" min="0" placeholder="Só para fixo ou garantia" inputmode="decimal" value="${f.valor}"></div>
+      ${novo ? '' : `<label class="check"><input type="checkbox" id="eq-ativo" data-eqf="ativo" ${f.ativo!==false?'checked':''}> Faz parte da equipe</label>`}
+      <button class="btn btn-primary btn-block" data-ui="eq-save">${novo ? 'Cadastrar' : 'Salvar alteração'}</button>
+      <button class="btn btn-ghost btn-block" data-ui="eq-cancel">Cancelar</button>
+    </div>
+  </section>`;
+}
+
+function renderEquipe(unidadeAtiva){
+  const key = state.currentMonth;
+  loadMonth(key);
+  const eq = equipeAtual();
+  const daUnidade = p => unidadeAtiva==='Geral' || p.unidade===unidadeAtiva;
+  const ativos = eq.pessoas.filter(p=>p.ativo!==false && daUnidade(p));
+  const inativos = eq.pessoas.filter(p=>p.ativo===false && daUnidade(p));
+  const linhas = ativos.map(p=>{
+    const previsto = eqPrevisto(p, key);
+    const adiant = sumAdiantamentos(key, p.nome);
+    const dig = eqDigitado(p, key);
+    // comissão ainda não informada: não dá para dizer quanto falta pagar
+    return { p, previsto, adiant, pagar: previsto - adiant, dig, sem: p.tipo==='comissao' && dig===null };
+  });
+  const comValor = linhas.filter(l=>!l.sem);
+  const faltam = linhas.length - comValor.length;
+  const totPrevisto = comValor.reduce((s,l)=>s+l.previsto, 0);
+  const totAdiant = linhas.reduce((s,l)=>s+l.adiant, 0);
+  const totPagar = comValor.reduce((s,l)=>s+l.pagar, 0);
+  const travado = !state.equipeCarregada || state.equipeErro;
+
+  // o painel de adiantamento fecha sozinho depois que o lançamento é salvo (o formulário volta para "Entrada")
+  if(state.uiAdiant && state.uiEntryPanel && !state.entryForm.funcionario && !state.editingEntry && !state.savingEntry){
+    state.uiEntryPanel = false; state.uiAdiant = false;
+    state.entryForm = { type:'entrada', date: todayISO(), category: ENTRADA_CATS[0], description:'', amount:'', funcionario:'', unidade: state.entryForm.unidade || 'Centro' };
+  }
+  const painel = state.uiEqForm ? equipeFormHTML() : (state.uiEntryPanel ? entryFormHTML(true) : '');
+
+  return `<div class="wrap">
+    ${pageHead('users', unidadeAtiva==='Geral' ? 'Toda a equipe' : unidadeAtiva, 'Equipe, previsão de pagamento e adiantamentos do mês', monthNavHTML(key))}
+    ${state.equipeErro ? '<p class="err" role="alert">Não foi possível carregar o cadastro da equipe. Recarregue a página antes de alterar qualquer coisa.</p>' : ''}
+    <div class="kpis">
+      ${kpiCard('', 'users', 'Pessoas na equipe', unidadeAtiva==='Geral' ? 'Centro e Jardim São Luís' : unidadeAtiva, String(ativos.length))}
+      ${kpiCard('', 'wallet', 'Previsto do mês', faltam ? (faltam===1 ? 'Falta informar 1 comissão' : 'Falta informar ' + faltam + ' comissões') : 'Comissões, garantias e fixos', fmtMoney(totPrevisto))}
+      ${kpiCard('warn', 'hand-coins', 'Adiantamentos', 'Já lançados no caixa neste mês', fmtMoney(totAdiant))}
+      ${kpiCard('final', 'coins', 'A pagar no fechamento', faltam ? 'Só de quem já tem valor informado' : 'Previsto − adiantamentos', fmtMoney(totPagar), {neg: totPagar<0})}
+    </div>
+
+    <section class="card">
+      <div class="ch">${ic('users')}<h3>Equipe</h3><button class="btn btn-ghost btn-sm x" data-ui="eq-new" ${travado?'disabled':''}>${ic('plus', 17)}Nova pessoa</button></div>
+      ${linhas.length===0 ? '<div class="empty">Ninguém cadastrado nesta unidade.</div>' : `
+      <div class="tbl-wrap"><table class="tbl t-equipe">
+        <thead><tr><th>Nome</th><th class="h-type">Pagamento</th><th class="r">Valor do mês</th><th class="r h-prev">Previsto</th><th class="r">Adiantamentos</th><th class="r">A pagar</th><th></th></tr></thead>
+        <tbody>
+        ${linhas.map(({p, previsto, adiant, pagar, dig, sem})=>`
+          <tr>
+            <td class="c-desc">${p.nomeCompleto}<span class="sub2">${[p.funcao, unidadeAtiva==='Geral' ? p.unidade : ''].filter(Boolean).join(' · ')}</span></td>
+            <td class="c-type"><span class="badge badge-geral">${EQ_TIPOS[p.tipo] || p.tipo}${p.tipo==='garantia' ? ' ' + fmtMoney(p.valor) : ''}</span></td>
+            <td class="c-in r"><input type="number" class="eq-prev" data-id="${p.id}" step="0.01" min="0" inputmode="decimal" ${travado?'disabled':''}
+              value="${dig!==null ? dig : (p.tipo==='fixo' ? (p.valor || '') : '')}" placeholder="${p.tipo==='fixo' ? 'Salário' : 'Comissão'}" aria-label="Valor do mês de ${p.nome}"></td>
+            <td class="c-prev r">${sem ? '<span class="sub2">a informar</span>' : fmtMoney(previsto)}${p.tipo==='garantia' && previsto===(p.valor||0) ? '<span class="sub2">garantia</span>' : ''}</td>
+            <td class="c-val r ${adiant>0 ? 'amber' : ''}">${fmtMoney(adiant)}</td>
+            <td class="c-pagar r ${!sem && pagar<0 ? 'neg' : ''}">${sem ? '—' : fmtMoney(pagar)}</td>
+            <td class="c-act"><div class="row-acts">
+              <button data-ui="eq-adiant" data-id="${p.id}" title="Lançar adiantamento" aria-label="Lançar adiantamento para ${p.nome}">${ic('hand-coins', 15)}</button>
+              <button data-ui="eq-edit" data-id="${p.id}" title="Editar cadastro" aria-label="Editar cadastro de ${p.nome}" ${travado?'disabled':''}>${ic('pencil', 15)}</button>
+            </div></td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>`}
+      <div class="cb" style="border-top:1px solid var(--line);">
+        <p class="hint" style="margin-top:0;">Comissão: digite o valor fechado no CashBarber. Garantia: vale o maior entre a garantia e a comissão digitada. Fixo: usa o salário do cadastro. "A pagar" é o previsto menos os adiantamentos lançados no caixa neste mês, em qualquer unidade.</p>
+        ${state.equipeCarregada && !state.equipeSalva && !state.equipeErro ? '<p class="hint">Cadastro inicial montado a partir da planilha de novembro. Ele é gravado no banco na primeira alteração.</p>' : ''}
+      </div>
+    </section>
+
+    ${inativos.length ? `
+    <section class="card">
+      <div class="ch">${ic('history')}<h3>Quem saiu da equipe (${inativos.length})</h3><button class="btn btn-ghost btn-sm x" data-ui="eq-inativos">${state.uiEqInativos ? 'Ocultar' : 'Mostrar'}</button></div>
+      ${state.uiEqInativos ? `<div class="cb" style="padding-top:8px;">${inativos.map(p=>`
+        <div class="line-item"><span>${p.nomeCompleto}<span class="sub2">${[p.funcao, p.unidade].filter(Boolean).join(' · ')}</span></span>
+          <button class="btn btn-ghost btn-sm" data-ui="eq-edit" data-id="${p.id}" ${travado?'disabled':''}>Editar</button></div>`).join('')}</div>` : ''}
+    </section>` : ''}
+
+    ${painel ? `<div class="drawer-backdrop" data-ui="${state.uiEqForm ? 'eq-cancel' : 'close-entry'}"></div><aside class="drawer" role="dialog" aria-label="${state.uiEqForm ? 'Cadastro' : 'Adiantamento'}">${painel}</aside>` : ''}
+  </div>`;
+}
+
+document.addEventListener('click', async (e)=>{
+  const t = e.target.closest('[data-ui^="eq-"]');
+  if(!t || t.disabled) return;
+  const a = t.dataset.ui;
+  const eq = equipeAtual();
+  const pessoa = t.dataset.id ? eq.pessoas.find(p=>p.id===t.dataset.id) : null;
+  if(a==='eq-new'){
+    const u = state.activeUnidade==='Jardim' ? 'Jardim São Luís' : 'Centro';
+    state.uiEqForm = { id:null, nome:'', nomeCompleto:'', unidade:u, funcao:'', tipo:'comissao', valor:'', ativo:true };
+    render(); const n = document.getElementById('eq-nome'); if(n) n.focus();
+  }
+  else if(a==='eq-edit' && pessoa){
+    state.uiEqForm = { id:pessoa.id, nome:pessoa.nome, nomeCompleto:pessoa.nomeCompleto || '', unidade:pessoa.unidade, funcao:pessoa.funcao || '', tipo:pessoa.tipo, valor:pessoa.valor || '', ativo:pessoa.ativo!==false };
+    render();
+  }
+  else if(a==='eq-cancel'){ state.uiEqForm = null; render(); }
+  else if(a==='eq-inativos'){ state.uiEqInativos = !state.uiEqInativos; render(); }
+  else if(a==='eq-adiant' && pessoa){
+    state.editingEntry = null;
+    state.entryForm = { type:'saida', date: todayISO(), category:'Adiantamento', description:'Adiantamento de salário - ' + (pessoa.nomeCompleto || pessoa.nome), amount:'', funcionario:pessoa.nome, unidade:pessoa.unidade };
+    state.uiEqForm = null; state.uiEntryPanel = true; state.uiAdiant = true;
+    render(); const v = document.getElementById('ef-amount'); if(v) v.focus();
+  }
+  else if(a==='eq-save'){
+    if(state.uiEqSalvando) return;
+    const f = state.uiEqForm; if(!f) return;
+    const g = id => document.getElementById(id);
+    const nome = g('eq-nome').value.trim();
+    const nomeCompleto = g('eq-completo').value.trim();
+    const tipo = g('eq-tipo').value;
+    const valor = parseFloat(g('eq-valor').value) || 0;
+    if(!nome){ alert('Preencha o nome que vai aparecer no caixa.'); return; }
+    if((tipo==='fixo' || tipo==='garantia') && !(valor>0)){ alert('Informe o valor do salário fixo ou da garantia.'); return; }
+    if(!state.equipeCarregada || state.equipeErro){ alert('O cadastro da equipe não foi carregado. Recarregue a página e tente de novo.'); return; }
+    const backup = JSON.stringify(state.equipe);
+    if(!f.id){
+      const repetido = state.equipe.pessoas.some(p=>p.nome.toLowerCase()===nome.toLowerCase()) || nome.toLowerCase()==='outro';
+      if(repetido){ alert('Já existe alguém com esse nome no caixa. Use um nome diferente.'); return; }
+      state.equipe.pessoas.push({ id: genId(), nome, nomeCompleto: nomeCompleto || nome, unidade: g('eq-unidade').value, funcao: g('eq-funcao').value.trim(), tipo, valor, ativo:true });
+    } else {
+      const p = state.equipe.pessoas.find(x=>x.id===f.id);
+      if(!p) return;
+      p.nomeCompleto = nomeCompleto || p.nome; p.unidade = g('eq-unidade').value; p.funcao = g('eq-funcao').value.trim(); p.tipo = tipo; p.valor = valor;
+      p.ativo = g('eq-ativo') ? g('eq-ativo').checked : true;
+    }
+    state.uiEqSalvando = true;
+    const ok = await saveEquipe();
+    state.uiEqSalvando = false;
+    if(!ok) state.equipe = JSON.parse(backup); else state.uiEqForm = null;
+    render();
+  }
+});
+/* guarda o que foi digitado no cadastro, para não se perder se a tela for redesenhada */
+document.addEventListener('input', (e)=>{
+  const el = e.target;
+  if(!el.dataset || !el.dataset.eqf || !state.uiEqForm) return;
+  state.uiEqForm[el.dataset.eqf] = el.type==='checkbox' ? el.checked : el.value;
+});
+/* valor do mês digitado na tabela da equipe */
+document.addEventListener('change', async (e)=>{
+  const i = e.target;
+  if(!i.classList || !i.classList.contains('eq-prev')) return;
+  if(!state.equipeCarregada || state.equipeErro){ alert('O cadastro da equipe não foi carregado. Recarregue a página e tente de novo.'); render(); return; }
+  const key = state.currentMonth, id = i.dataset.id, raw = i.value.trim();
+  const backup = JSON.stringify(state.equipe);
+  const m = state.equipe.previstos[key] = state.equipe.previstos[key] || {};
+  if(raw===''){ delete m[id]; }
+  else {
+    const v = parseFloat(raw);
+    if(isNaN(v) || v<0){ alert('Valor inválido.'); render(); return; }
+    m[id] = v;
+  }
+  const ok = await saveEquipe();
+  if(!ok) state.equipe = JSON.parse(backup);
+  render();
 });
 
 /* ---------- events ---------- */
