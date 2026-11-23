@@ -203,6 +203,8 @@ button.badge:hover{filter:brightness(1.2);}
 .check{display:flex !important; align-items:center; gap:10px; margin:0 !important; color:var(--fg) !important; font-size:14px !important;}
 .check input{width:18px; height:18px; accent-color:var(--lime); flex:none;}
 .line-item .btn{flex:none;}
+.cons-item{align-items:center;}
+.cons-right{display:flex; align-items:center; gap:10px; flex:none;}
 button:disabled,input:disabled{opacity:.5; cursor:not-allowed;}
 .strike{display:block; text-decoration:line-through; color:var(--fg3); font-size:12px;}
 .amber{color:var(--amber); font-weight:600;}
@@ -265,14 +267,30 @@ body.is-login .side,body.is-login .seg,body.is-login .profile{display:none !impo
 }
 @media (max-width:1399px){
   .tbl .c-type,.tbl .h-type{display:none;}
+  .t-equipe .c-prev,.t-equipe .h-prev{display:none;}
   .work{grid-template-columns:minmax(0,1fr) 320px;}
 }
 @media (max-width:1199px){
   .work{grid-template-columns:minmax(0,1fr);}
   .work > .stack{order:-1;}
   .tbl .c-cat,.tbl .h-cat{display:none;}
-  .t-equipe .c-prev,.t-equipe .h-prev{display:none;}
-  .tbl input[type=number]{width:110px;}
+  .tbl.t-equipe,.tbl.t-equipe tbody{display:block;}
+  .tbl.t-equipe thead{display:none;}
+  .tbl.t-equipe tr{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px 12px; align-items:center; padding:13px 16px; border-bottom:1px solid var(--line);}
+  .tbl.t-equipe tbody tr:last-child{border-bottom:0;}
+  .tbl.t-equipe td,.tbl.t-equipe td:first-child,.tbl.t-equipe td:last-child{display:block; padding:0; border:0; white-space:normal;}
+  .tbl.t-equipe .c-desc{grid-column:1; grid-row:1; min-width:0; font-weight:500;}
+  .tbl.t-equipe .c-pagar{grid-column:2; grid-row:1; text-align:right; white-space:nowrap;}
+  .tbl.t-equipe .c-pagar::before{content:"A pagar "; font-weight:400; font-size:12px; color:var(--fg3);}
+  .tbl.t-equipe .c-in{grid-column:1; grid-row:2; text-align:left;}
+  .tbl.t-equipe .c-in input{width:100%; max-width:220px; text-align:left;}
+  .tbl.t-equipe .c-val{grid-column:2; grid-row:2; text-align:right; font-size:12px; font-weight:500; white-space:nowrap;}
+  .tbl.t-equipe .c-val::before{content:"Adiant. "; color:var(--fg3); font-weight:400;}
+  .tbl.t-equipe .c-act{grid-column:1; grid-row:3;}
+  .tbl.t-equipe .c-act .row-acts{justify-content:flex-start;}
+  .tbl.t-equipe .c-cons{grid-column:2; grid-row:3; text-align:right; font-size:12px; font-weight:500; white-space:nowrap;}
+  .tbl.t-equipe .c-cons::before{content:"Consumo "; color:var(--fg3); font-weight:400;}
+  .tbl.t-equipe .c-type,.tbl.t-equipe .c-prev{display:none;}
   .sub2.cat-inline{display:block;}
 }
 @media (min-width:700px) and (max-width:1199px){
@@ -363,14 +381,6 @@ body.is-login .side,body.is-login .seg,body.is-login .profile{display:none !impo
   .tbl .c-act{grid-column:2; grid-row:3;}
   .tbl.t-hoje .c-act{grid-row:2;}
   .tbl.t-contas .c-date{grid-row:2;}
-  .tbl.t-equipe .c-pagar{grid-column:2; grid-row:1; text-align:right; white-space:nowrap;}
-  .tbl.t-equipe .c-pagar::before{content:"A pagar "; font-weight:400; font-size:12px; color:var(--fg3);}
-  .tbl.t-equipe .c-in{grid-column:1; grid-row:2; text-align:left;}
-  .tbl.t-equipe .c-in input{width:100%; max-width:200px; text-align:left;}
-  .tbl.t-equipe .c-val{grid-column:2; grid-row:2; font-size:12px; font-weight:500;}
-  .tbl.t-equipe .c-val::before{content:"Adiant. "; color:var(--fg3); font-weight:400;}
-  .tbl.t-equipe .c-prev{display:none;}
-  .tbl.t-equipe .c-act{grid-column:1 / -1; grid-row:3;}
   .tbl.t-contas .c-date::before{content:"Vence ";}
   .tbl .c-type,.tbl .c-unit,.sub2.cat-inline{display:none;}
   .tbl .c-cat{display:block;}
@@ -406,6 +416,7 @@ body.is-login .side,body.is-login .seg,body.is-login .profile{display:none !impo
 <symbol id="i-circle-plus" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M8 12h8" /><path d="M12 8v8" /></symbol>
 <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></symbol>
 <symbol id="i-coins" viewBox="0 0 24 24"><path d="M13.744 17.736a6 6 0 1 1-7.48-7.48" /><path d="M15 6h1v4" /><path d="m6.134 14.768.866-.5 2 3.464" /><circle cx="16" cy="8" r="6" /></symbol>
+<symbol id="i-cup-soda" viewBox="0 0 24 24"><path d="m6 8 1.75 12.28a2 2 0 0 0 2 1.72h4.54a2 2 0 0 0 2-1.72L18 8" /><path d="M5 8h14" /><path d="M7 15a6.47 6.47 0 0 1 5 0 6.47 6.47 0 0 0 5 0" /><path d="m12 8 1-6h2" /></symbol>
 <symbol id="i-droplet" viewBox="0 0 24 24"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" /></symbol>
 <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /><path d="M14 2v5a1 1 0 0 0 1 1h5" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" /></symbol>
 <symbol id="i-hand-coins" viewBox="0 0 24 24"><path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 17" /><path d="m7 21 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9" /><path d="m2 16 6 6" /><circle cx="16" cy="9" r="2.9" /><circle cx="6" cy="5" r="3" /></symbol>
@@ -1299,7 +1310,7 @@ function closeEntryPanel(){
 document.addEventListener('click', (e)=>{
   const menu = document.getElementById('profile-menu');
   const t = e.target.closest('[data-ui]');
-  if(e.target.closest('[data-section]')){ state.uiEntryPanel = false; state.uiEqForm = null; state.uiAdiant = false; }
+  if(e.target.closest('[data-section]')){ state.uiEntryPanel = false; state.uiEqForm = null; state.uiAdiant = false; state.uiEqConsumo = null; }
   if(!t){
     if(menu && !menu.hidden && !e.target.closest('#profile')) menu.hidden = true;
     return;
@@ -1328,6 +1339,7 @@ document.addEventListener('keydown', (e)=>{
   const menu = document.getElementById('profile-menu');
   if(menu && !menu.hidden){ menu.hidden = true; return; }
   if(state.uiEqForm){ state.uiEqForm = null; render(); return; }
+  if(state.uiEqConsumo){ state.uiEqConsumo = null; render(); return; }
   if(document.querySelector('.drawer')) closeEntryPanel();
 });
 
@@ -1376,6 +1388,7 @@ async function loadEquipe(){
   const valido = d && Array.isArray(d.pessoas);
   state.equipe = valido ? d : { pessoas: JSON.parse(JSON.stringify(EQUIPE_PADRAO)), previstos: {} };
   if(!state.equipe.previstos) state.equipe.previstos = {};
+  if(!state.equipe.consumos) state.equipe.consumos = {};
   state.equipeSalva = !!valido;
   state.equipeErro = !ok;
   state.equipeCarregada = true;
@@ -1402,6 +1415,40 @@ function eqPrevisto(p, key){
   if(p.tipo==='fixo') return dig!==null ? dig : (p.valor || 0);
   if(p.tipo==='garantia') return Math.max(p.valor || 0, dig || 0);
   return dig || 0;
+}
+
+/* Consumo da pessoa no mês (bar, produtos): não é movimento de caixa, só desconto no fechamento. */
+function eqConsumoItens(p, key){
+  const m = (equipeAtual().consumos || {})[key] || {};
+  return Array.isArray(m[p.id]) ? m[p.id] : [];
+}
+function eqConsumo(p, key){
+  return eqConsumoItens(p, key).reduce((s,i)=>s + (i.valor || 0), 0);
+}
+function consumoPainelHTML(p, key){
+  const itens = eqConsumoItens(p, key).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const hoje = todayISO();
+  const dataPadrao = state.uiConsData || (hoje.slice(0,7)===key ? hoje : key + '-01');
+  return `
+  <section class="card">
+    <div class="ch">${ic('cup-soda')}<h3>Consumo de ${p.nome}</h3><button class="ibtn x" data-ui="eq-cons-close" title="Fechar" aria-label="Fechar">${ic('x')}</button></div>
+    <div class="cb form">
+      <p class="hint" style="margin-top:0;">${p.nomeCompleto} · ${monthLabel(key)}. O consumo não entra no caixa: ele só é descontado do valor a pagar no fechamento.</p>
+      <div class="g2">
+        <div><label for="cons-date">Data</label><input type="date" id="cons-date" value="${dataPadrao}"></div>
+        <div><label for="cons-valor">Valor (R$)</label><input type="number" id="cons-valor" step="0.01" min="0" placeholder="0,00" inputmode="decimal"></div>
+      </div>
+      <div><label for="cons-desc">O que consumiu</label><input type="text" id="cons-desc" placeholder="Ex: 2 cervejas, pomada"></div>
+      <button class="btn btn-primary btn-block" data-ui="eq-cons-add" data-id="${p.id}">${ic('plus', 17)}Adicionar consumo</button>
+    </div>
+    <div class="cb" style="border-top:1px solid var(--line); padding-top:8px;">
+      ${itens.length===0 ? '<div class="empty" style="padding:16px 0;">Nenhum consumo lançado neste mês.</div>' : itens.map(i=>`
+        <div class="line-item cons-item"><span>${i.desc || 'Consumo'}<span class="sub2">${fmtDateBR(i.date)}${i.por ? ' · por ' + i.por : ''}</span></span>
+          <span class="cons-right"><b>${fmtMoney(i.valor)}</b><span class="row-acts"><button class="del" data-ui="eq-cons-del" data-id="${p.id}" data-item="${i.id}" data-key="${key}" title="Excluir" aria-label="Excluir consumo">${ic('trash-2', 15)}</button></span></span>
+        </div>`).join('')}
+      ${itens.length ? `<div class="line-item" style="border-bottom:0;"><span><strong>Total do mês</strong></span><b>${fmtMoney(itens.reduce((s,i)=>s+i.valor,0))}</b></div>` : ''}
+    </div>
+  </section>`;
 }
 
 function equipeFormHTML(){
@@ -1444,13 +1491,15 @@ function renderEquipe(unidadeAtiva){
     const previsto = eqPrevisto(p, key);
     const adiant = sumAdiantamentos(key, p.nome);
     const dig = eqDigitado(p, key);
+    const consumo = eqConsumo(p, key);
     // comissão ainda não informada: não dá para dizer quanto falta pagar
-    return { p, previsto, adiant, pagar: previsto - adiant, dig, sem: p.tipo==='comissao' && dig===null };
+    return { p, previsto, adiant, consumo, pagar: previsto - adiant - consumo, dig, sem: p.tipo==='comissao' && dig===null };
   });
   const comValor = linhas.filter(l=>!l.sem);
   const faltam = linhas.length - comValor.length;
   const totPrevisto = comValor.reduce((s,l)=>s+l.previsto, 0);
   const totAdiant = linhas.reduce((s,l)=>s+l.adiant, 0);
+  const totConsumo = linhas.reduce((s,l)=>s+l.consumo, 0);
   const totPagar = comValor.reduce((s,l)=>s+l.pagar, 0);
   const travado = !state.equipeCarregada || state.equipeErro;
 
@@ -1459,25 +1508,27 @@ function renderEquipe(unidadeAtiva){
     state.uiEntryPanel = false; state.uiAdiant = false;
     state.entryForm = { type:'entrada', date: todayISO(), category: ENTRADA_CATS[0], description:'', amount:'', funcionario:'', unidade: state.entryForm.unidade || 'Centro' };
   }
-  const painel = state.uiEqForm ? equipeFormHTML() : (state.uiEntryPanel ? entryFormHTML(true) : '');
+  const pessoaConsumo = state.uiEqConsumo ? eq.pessoas.find(p=>p.id===state.uiEqConsumo) : null;
+  const painel = state.uiEqForm ? equipeFormHTML() : pessoaConsumo ? consumoPainelHTML(pessoaConsumo, key) : (state.uiEntryPanel ? entryFormHTML(true) : '');
+  const fecharPainel = state.uiEqForm ? 'eq-cancel' : pessoaConsumo ? 'eq-cons-close' : 'close-entry';
 
   return `<div class="wrap">
     ${pageHead('users', unidadeAtiva==='Geral' ? 'Toda a equipe' : unidadeAtiva, 'Equipe, previsão de pagamento e adiantamentos do mês', monthNavHTML(key))}
     ${state.equipeErro ? '<p class="err" role="alert">Não foi possível carregar o cadastro da equipe. Recarregue a página antes de alterar qualquer coisa.</p>' : ''}
     <div class="kpis">
-      ${kpiCard('', 'users', 'Pessoas na equipe', unidadeAtiva==='Geral' ? 'Centro e Jardim São Luís' : unidadeAtiva, String(ativos.length))}
       ${kpiCard('', 'wallet', 'Previsto do mês', faltam ? (faltam===1 ? 'Falta informar 1 comissão' : 'Falta informar ' + faltam + ' comissões') : 'Comissões, garantias e fixos', fmtMoney(totPrevisto))}
       ${kpiCard('warn', 'hand-coins', 'Adiantamentos', 'Já lançados no caixa neste mês', fmtMoney(totAdiant))}
-      ${kpiCard('final', 'coins', 'A pagar no fechamento', faltam ? 'Só de quem já tem valor informado' : 'Previsto − adiantamentos', fmtMoney(totPagar), {neg: totPagar<0})}
+      ${kpiCard('warn', 'cup-soda', 'Consumo', 'Bar e produtos, a descontar', fmtMoney(totConsumo))}
+      ${kpiCard('final', 'coins', 'A pagar no fechamento', faltam ? 'Só de quem já tem valor informado' : 'Previsto − adiantamentos − consumo', fmtMoney(totPagar), {neg: totPagar<0})}
     </div>
 
     <section class="card">
-      <div class="ch">${ic('users')}<h3>Equipe</h3><button class="btn btn-ghost btn-sm x" data-ui="eq-new" ${travado?'disabled':''}>${ic('plus', 17)}Nova pessoa</button></div>
+      <div class="ch">${ic('users')}<h3>Equipe (${ativos.length})</h3><button class="btn btn-ghost btn-sm x" data-ui="eq-new" ${travado?'disabled':''}>${ic('plus', 17)}Nova pessoa</button></div>
       ${linhas.length===0 ? '<div class="empty">Ninguém cadastrado nesta unidade.</div>' : `
       <div class="tbl-wrap"><table class="tbl t-equipe">
-        <thead><tr><th>Nome</th><th class="h-type">Pagamento</th><th class="r">Valor do mês</th><th class="r h-prev">Previsto</th><th class="r">Adiantamentos</th><th class="r">A pagar</th><th></th></tr></thead>
+        <thead><tr><th>Nome</th><th class="h-type">Pagamento</th><th class="r">Valor do mês</th><th class="r h-prev">Previsto</th><th class="r">Adiantamentos</th><th class="r">Consumo</th><th class="r">A pagar</th><th></th></tr></thead>
         <tbody>
-        ${linhas.map(({p, previsto, adiant, pagar, dig, sem})=>`
+        ${linhas.map(({p, previsto, adiant, consumo, pagar, dig, sem})=>`
           <tr>
             <td class="c-desc">${p.nomeCompleto}<span class="sub2">${[p.funcao, unidadeAtiva==='Geral' ? p.unidade : ''].filter(Boolean).join(' · ')}</span></td>
             <td class="c-type"><span class="badge badge-geral">${EQ_TIPOS[p.tipo] || p.tipo}${p.tipo==='garantia' ? ' ' + fmtMoney(p.valor) : ''}</span></td>
@@ -1485,8 +1536,10 @@ function renderEquipe(unidadeAtiva){
               value="${dig!==null ? dig : (p.tipo==='fixo' ? (p.valor || '') : '')}" placeholder="${p.tipo==='fixo' ? 'Salário' : 'Comissão'}" aria-label="Valor do mês de ${p.nome}"></td>
             <td class="c-prev r">${sem ? '<span class="sub2">a informar</span>' : fmtMoney(previsto)}${p.tipo==='garantia' && previsto===(p.valor||0) ? '<span class="sub2">garantia</span>' : ''}</td>
             <td class="c-val r ${adiant>0 ? 'amber' : ''}">${fmtMoney(adiant)}</td>
+            <td class="c-cons r ${consumo>0 ? 'amber' : ''}">${fmtMoney(consumo)}</td>
             <td class="c-pagar r ${!sem && pagar<0 ? 'neg' : ''}">${sem ? '—' : fmtMoney(pagar)}</td>
             <td class="c-act"><div class="row-acts">
+              <button data-ui="eq-consumo" data-id="${p.id}" title="Lançar consumo" aria-label="Lançar consumo de ${p.nome}">${ic('cup-soda', 15)}</button>
               <button data-ui="eq-adiant" data-id="${p.id}" title="Lançar adiantamento" aria-label="Lançar adiantamento para ${p.nome}">${ic('hand-coins', 15)}</button>
               <button data-ui="eq-edit" data-id="${p.id}" title="Editar cadastro" aria-label="Editar cadastro de ${p.nome}" ${travado?'disabled':''}>${ic('pencil', 15)}</button>
             </div></td>
@@ -1494,7 +1547,7 @@ function renderEquipe(unidadeAtiva){
         </tbody>
       </table></div>`}
       <div class="cb" style="border-top:1px solid var(--line);">
-        <p class="hint" style="margin-top:0;">Comissão: digite o valor fechado no CashBarber. Garantia: vale o maior entre a garantia e a comissão digitada. Fixo: usa o salário do cadastro. "A pagar" é o previsto menos os adiantamentos lançados no caixa neste mês, em qualquer unidade.</p>
+        <p class="hint" style="margin-top:0;">Comissão: digite o valor fechado no CashBarber. Garantia: vale o maior entre a garantia e a comissão digitada. Fixo: usa o salário do cadastro. "A pagar" é o previsto menos os adiantamentos lançados no caixa neste mês (em qualquer unidade) e menos o consumo lançado aqui.</p>
         ${state.equipeCarregada && !state.equipeSalva && !state.equipeErro ? '<p class="hint">Cadastro inicial montado a partir da planilha de novembro. Ele é gravado no banco na primeira alteração.</p>' : ''}
       </div>
     </section>
@@ -1507,7 +1560,7 @@ function renderEquipe(unidadeAtiva){
           <button class="btn btn-ghost btn-sm" data-ui="eq-edit" data-id="${p.id}" ${travado?'disabled':''}>Editar</button></div>`).join('')}</div>` : ''}
     </section>` : ''}
 
-    ${painel ? `<div class="drawer-backdrop" data-ui="${state.uiEqForm ? 'eq-cancel' : 'close-entry'}"></div><aside class="drawer" role="dialog" aria-label="${state.uiEqForm ? 'Cadastro' : 'Adiantamento'}">${painel}</aside>` : ''}
+    ${painel ? `<div class="drawer-backdrop" data-ui="${fecharPainel}"></div><aside class="drawer" role="dialog" aria-label="${state.uiEqForm ? 'Cadastro' : pessoaConsumo ? 'Consumo' : 'Adiantamento'}">${painel}</aside>` : ''}
   </div>`;
 }
 
@@ -1528,10 +1581,50 @@ document.addEventListener('click', async (e)=>{
   }
   else if(a==='eq-cancel'){ state.uiEqForm = null; render(); }
   else if(a==='eq-inativos'){ state.uiEqInativos = !state.uiEqInativos; render(); }
+  else if(a==='eq-consumo' && pessoa){
+    state.uiEqForm = null; state.uiEntryPanel = false; state.uiAdiant = false; state.uiConsData = '';
+    state.uiEqConsumo = pessoa.id; render();
+    const d = document.getElementById('cons-desc'); if(d) d.focus();
+  }
+  else if(a==='eq-cons-close'){ state.uiEqConsumo = null; state.uiConsData = ''; render(); }
+  else if(a==='eq-cons-add' && pessoa){
+    if(state.uiEqSalvando) return;
+    const g = id => document.getElementById(id);
+    const date = g('cons-date').value, desc = g('cons-desc').value.trim(), valor = parseFloat(g('cons-valor').value);
+    if(!date || isNaN(valor) || valor<=0){ alert('Preencha a data e um valor válido.'); return; }
+    if(!state.equipeCarregada || state.equipeErro){ alert('O cadastro da equipe não foi carregado. Recarregue a página e tente de novo.'); return; }
+    const backup = JSON.stringify(state.equipe);
+    const k = date.slice(0,7);
+    const mes = state.equipe.consumos[k] = state.equipe.consumos[k] || {};
+    (mes[pessoa.id] = mes[pessoa.id] || []).push({ id: genId(), date, desc, valor, por: USERS[state.currentUser].nome.split(' ')[0] });
+    state.uiEqSalvando = true;
+    const ok = await saveEquipe();
+    state.uiEqSalvando = false;
+    if(!ok) state.equipe = JSON.parse(backup);
+    state.uiConsData = date;
+    render();
+    const d = document.getElementById('cons-desc'); if(d) d.focus();
+  }
+  else if(a==='eq-cons-del' && pessoa){
+    if(state.uiEqSalvando) return;
+    if(!state.equipeCarregada || state.equipeErro){ alert('O cadastro da equipe não foi carregado. Recarregue a página e tente de novo.'); return; }
+    if(!confirm('Excluir este consumo?')) return;
+    const k = t.dataset.key;
+    const lista = ((state.equipe.consumos[k] || {})[pessoa.id]) || [];
+    const i = lista.findIndex(x=>x.id===t.dataset.item);
+    if(i<0) return;
+    const backup = JSON.stringify(state.equipe);
+    lista.splice(i, 1);
+    state.uiEqSalvando = true;
+    const ok = await saveEquipe();
+    state.uiEqSalvando = false;
+    if(!ok) state.equipe = JSON.parse(backup);
+    render();
+  }
   else if(a==='eq-adiant' && pessoa){
     state.editingEntry = null;
     state.entryForm = { type:'saida', date: todayISO(), category:'Adiantamento', description:'Adiantamento de salário - ' + (pessoa.nomeCompleto || pessoa.nome), amount:'', funcionario:pessoa.nome, unidade:pessoa.unidade };
-    state.uiEqForm = null; state.uiEntryPanel = true; state.uiAdiant = true;
+    state.uiEqForm = null; state.uiEqConsumo = null; state.uiEntryPanel = true; state.uiAdiant = true;
     render(); const v = document.getElementById('ef-amount'); if(v) v.focus();
   }
   else if(a==='eq-save'){
